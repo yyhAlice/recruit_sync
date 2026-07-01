@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RecruitSync Dashboard | Agency Portal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#b2c5ff",
+                    "primary": "#003d9b",
+                    "on-primary-container": "#c4d2ff",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#d7e3fb",
+                    "tertiary-fixed-dim": "#ffb59b",
+                    "on-surface": "#191c1e",
+                    "success-green": "#36B37E",
+                    "tertiary": "#7b2600",
+                    "client-purple": "#6554C0",
+                    "warning-amber": "#FFAB00",
+                    "surface-tint": "#0c56d0",
+                    "tertiary-fixed": "#ffdbcf",
+                    "on-tertiary-container": "#ffc6b2",
+                    "secondary-container": "#d4e0f8",
+                    "secondary-fixed-dim": "#bbc7de",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#2e3132",
+                    "danger-red": "#FF5630",
+                    "on-secondary-fixed-variant": "#3b475b",
+                    "on-primary-fixed": "#001848",
+                    "on-surface-variant": "#434654",
+                    "surface-container-low": "#f3f4f6",
+                    "surface-container-high": "#e7e8ea",
+                    "secondary": "#535f73",
+                    "on-tertiary": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "background": "#f8f9fb",
+                    "error-container": "#ffdad6",
+                    "primary-fixed": "#dae2ff",
+                    "on-secondary-container": "#576377",
+                    "outline": "#737685",
+                    "primary-container": "#0052cc",
+                    "surface-container": "#edeef0",
+                    "inverse-on-surface": "#f0f1f3",
+                    "surface-dim": "#d9dadc",
+                    "on-tertiary-fixed-variant": "#812800",
+                    "text-subtle": "#505F79",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-bright": "#f8f9fb",
+                    "tertiary-container": "#a33500",
+                    "on-tertiary-fixed": "#380d00",
+                    "border-low": "#DFE1E6",
+                    "on-primary-fixed-variant": "#0040a2",
+                    "on-secondary-fixed": "#101c2d",
+                    "outline-variant": "#c3c6d6",
+                    "on-error": "#ffffff",
+                    "surface": "#f8f9fb",
+                    "surface-variant": "#e1e2e4",
+                    "on-background": "#191c1e",
+                    "surface-container-highest": "#e1e2e4",
+                    "on-primary": "#ffffff",
+                    "inverse-primary": "#b2c5ff",
+                    "text-main": "#172B4D"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "row-height-standard": "44px",
+                    "row-height-dense": "32px",
+                    "gutter": "16px",
+                    "unit": "4px",
+                    "margin-page": "24px"
+            },
+            "fontFamily": {
+                    "data-mono": ["JetBrains Mono"],
+                    "body-main": ["Inter"],
+                    "body-bold": ["Inter"],
+                    "display-lg": ["Inter"],
+                    "label-sm": ["Inter"],
+                    "headline-page": ["Inter"]
+            },
+            "fontSize": {
+                    "data-mono": ["12px", {"lineHeight": "18px", "fontWeight": "400"}],
+                    "body-main": ["13px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "body-bold": ["13px", {"lineHeight": "20px", "fontWeight": "600"}],
+                    "display-lg": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "label-sm": ["11px", {"lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500"}],
+                    "headline-page": ["15px", {"lineHeight": "22px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #ced4da; border-radius: 10px; }
+        .status-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+        .dot-green { background-color: #36B37E; }
+        .dot-amber { background-color: #FFAB00; }
+        .dot-red { background-color: #FF5630; }
+    </style>
+</head>
+<body class="bg-surface text-text-main antialiased overflow-hidden">
+<!-- SideNavBar (from COMPONENTS_3) -->
+<aside class="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest border-r border-border-low flex flex-col z-50">
+<div class="px-6 mb-8"><div class="px-6 py-8">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 bg-primary rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-[20px]">bolt</span>
+</div>
+<div>
+<h1 class="font-display-lg text-[18px] font-bold text-text-main leading-none">RecruitSync</h1>
+<p class="text-[10px] uppercase tracking-widest text-primary font-bold mt-0.5">Kinetic</p>
+</div>
+</div>
+</div></div>
+<nav class="flex-1 px-3 space-y-1"><div class="px-4 mb-6">
+<p class="px-2 mb-2 text-[10px] font-bold text-text-subtle uppercase tracking-wider">Overview</p>
+<div class="space-y-1">
+<div class="flex items-center px-3 py-2 text-primary font-body-bold bg-primary-container/5 border-l-2 border-primary rounded-r cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px]">dashboard</span>
+<span class="text-body-bold">Dashboard</span>
+</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<p class="px-2 mb-2 text-[10px] font-bold text-text-subtle uppercase tracking-wider">CRM</p>
+<div class="space-y-1">
+<div class="flex items-center px-3 py-2 text-text-main hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px] text-text-subtle">business</span>
+<span class="text-body-main">Clients</span>
+</div>
+<div class="flex items-center px-3 py-2 text-text-main hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px] text-text-subtle">work</span>
+<span class="text-body-main">Jobs</span>
+</div>
+<div class="flex items-center px-3 py-2 text-text-main hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px] text-text-subtle">person_search</span>
+<span class="text-body-main">Candidates</span>
+</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<p class="px-2 mb-2 text-[10px] font-bold text-text-subtle uppercase tracking-wider">Pipeline</p>
+<div class="space-y-1">
+<div class="flex items-center px-3 py-2 text-text-main hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px] text-text-subtle">view_kanban</span>
+<span class="text-body-main">Pipeline</span>
+</div>
+<div class="flex items-center px-3 py-2 text-text-main hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px] text-text-subtle">history</span>
+<span class="text-body-main">Activity Logs</span>
+</div>
+<div class="flex items-center justify-between px-3 py-2 text-text-main hover:bg-surface-container-low transition-colors cursor-pointer">
+<div class="flex items-center">
+<span class="material-symbols-outlined mr-3 text-[20px] text-text-subtle">notifications</span>
+<span class="text-body-main">Reminders</span>
+</div>
+<span class="bg-danger-red text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">3</span>
+</div>
+</div>
+</div>
+<div class="px-4 mb-6">
+<p class="px-2 mb-2 text-[10px] font-bold text-text-subtle uppercase tracking-wider">Files &amp; CV</p>
+<div class="space-y-1">
+<div class="flex items-center px-3 py-2 text-text-main hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px] text-text-subtle">folder_open</span>
+<span class="text-body-main">File Workspace</span>
+</div>
+<div class="flex items-center px-3 py-2 text-text-main hover:bg-surface-container-low transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px] text-text-subtle">upload_file</span>
+<span class="text-body-main">Upload CV</span>
+</div>
+</div>
+</div></nav>
+<div class="px-3 border-t border-border-low pt-4 space-y-1">
+<div class="flex items-center px-3 py-2 text-text-subtle hover:bg-surface-container-high transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px]">settings</span>
+<span class="font-body-main text-body-main">Settings</span>
+</div>
+<div class="flex items-center px-3 py-2 text-text-subtle hover:bg-surface-container-high transition-colors cursor-pointer">
+<span class="material-symbols-outlined mr-3 text-[20px]">help</span>
+<span class="font-body-main text-body-main">Support</span>
+</div>
+</div>
+</aside>
+<!-- TopNavBar (from COMPONENTS_3) -->
+<header class="fixed top-0 right-0 left-64 h-row-height-standard bg-surface border-b border-border-low flex justify-between items-center px-margin-page z-40">
+<div class="flex items-center gap-4 flex-1">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-text-subtle text-[18px]">search</span>
+<input class="w-full pl-10 pr-4 py-1 text-body-main font-body-main bg-surface-container-low border-none rounded focus:ring-1 focus:ring-primary-container" placeholder="Quick search candidates or jobs..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex gap-4 items-center">
+<span class="material-symbols-outlined text-text-subtle cursor-pointer hover:text-primary transition-colors">notifications</span>
+<span class="material-symbols-outlined text-text-subtle cursor-pointer hover:text-primary transition-colors">history</span>
+</div>
+<div class="h-8 w-px bg-border-low"></div>
+<div class="flex items-center gap-3">
+<img alt="Profile" class="w-8 h-8 rounded-full border border-border-low" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBleJESbU-dE4_MO9Rvq9pvxtTism65pSQWplz_WvvqrsyDd_ZeyFQ_srq6YCTa6Clcf8POYEFpCuj8tgcAnbffBebNmNW_tNZmKgoNTah6XKOBbNn_TqsOkI3F64pAs-1LmOy3SG8P7sFHyH8NEpLFLrfnvSN2Cnm4GqUklAahDYjMEnHEmJ_QV3iOQkLbboFnmCVlQ5ql_2PA5EwHrK0MG06G-sjO2fGe2VpqO1yJDccIgYSRBAdyn_Dgn3Ps_acxJsXXU8wUW5I"/>
+<span class="font-body-bold text-body-bold">Admin Portal</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-row-height-standard h-[calc(100vh-44px)] overflow-y-auto p-margin-page custom-scrollbar">
+<!-- Metric Cards Row -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-gutter">
+<!-- Active Jobs -->
+<div class="bg-surface-container-lowest p-4 border border-border-low rounded shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-sm text-label-sm text-text-subtle uppercase tracking-wider">Active Jobs</span>
+<span class="material-symbols-outlined text-primary-container text-[20px]">work</span>
+</div>
+<div class="font-display-lg text-display-lg font-bold text-text-main">24</div>
+<div class="mt-2 flex items-center text-[11px] text-success-green">
+<span class="material-symbols-outlined text-[14px] mr-1">trending_up</span>
+<span>+3 from last week</span>
+</div>
+</div>
+<!-- In Screening -->
+<div class="bg-surface-container-lowest p-4 border border-border-low rounded shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-sm text-label-sm text-text-subtle uppercase tracking-wider">In Screening</span>
+<span class="material-symbols-outlined text-primary-container text-[20px]">filter_list</span>
+</div>
+<div class="font-display-lg text-display-lg font-bold text-text-main">12</div>
+<div class="mt-2 flex items-center text-[11px] text-text-subtle">
+<span>4 awaiting feedback</span>
+</div>
+</div>
+<!-- Interviews Today -->
+<div class="bg-surface-container-lowest p-4 border border-border-low rounded shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-sm text-label-sm text-text-subtle uppercase tracking-wider">Interviews Today</span>
+<span class="material-symbols-outlined text-primary-container text-[20px]">calendar_today</span>
+</div>
+<div class="font-display-lg text-display-lg font-bold text-text-main">8</div>
+<div class="mt-2 flex items-center text-[11px] text-primary-container">
+<span>Next: 14:00 JST</span>
+</div>
+</div>
+<!-- Reminders Due (Alert State) -->
+<div class="bg-surface-container-lowest p-4 border border-danger-red border-opacity-50 rounded shadow-sm">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-sm text-label-sm text-danger-red font-bold uppercase tracking-wider">Reminders Due</span>
+<span class="material-symbols-outlined text-danger-red text-[20px]">error</span>
+</div>
+<div class="font-display-lg text-display-lg font-bold text-danger-red">5</div>
+<div class="mt-2 flex items-center text-[11px] text-danger-red">
+<span>Action required now</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-gutter mb-gutter">
+<!-- Left Column: Candidates by Stage -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest border border-border-low rounded p-6">
+<div class="flex justify-between items-center mb-6">
+<h2 class="font-headline-page text-headline-page">Candidates by Stage</h2>
+<span class="font-label-sm text-label-sm text-text-subtle">Updated 5m ago</span>
+</div>
+<div class="space-y-4">
+<!-- Sourced -->
+<div>
+<div class="flex justify-between text-body-main mb-1">
+<span>Sourced</span>
+<span class="font-body-bold">42</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-primary-container h-2 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<!-- Screening -->
+<div>
+<div class="flex justify-between text-body-main mb-1">
+<span>Screening</span>
+<span class="font-body-bold">28</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-primary-container h-2 rounded-full" style="width: 66%"></div>
+</div>
+</div>
+<!-- Interview -->
+<div>
+<div class="flex justify-between text-body-main mb-1">
+<span>Interview</span>
+<span class="font-body-bold">15</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-primary-container h-2 rounded-full" style="width: 35%"></div>
+</div>
+</div>
+<!-- Offer -->
+<div>
+<div class="flex justify-between text-body-main mb-1">
+<span>Offer</span>
+<span class="font-body-bold">6</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-primary-container h-2 rounded-full" style="width: 14%"></div>
+</div>
+</div>
+<!-- Placed -->
+<div>
+<div class="flex justify-between text-body-main mb-1">
+<span>Placed</span>
+<span class="font-body-bold">4</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2">
+<div class="bg-success-green h-2 rounded-full" style="width: 9%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Due Today List -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest border border-border-low rounded overflow-hidden flex flex-col">
+<div class="p-4 border-b border-border-low bg-surface-container-low flex justify-between items-center">
+<h2 class="font-headline-page text-headline-page">Due Today</h2>
+<span class="bg-danger-red text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">5</span>
+</div>
+<div class="flex-1 divide-y divide-border-low overflow-y-auto custom-scrollbar">
+<div class="p-4 hover:bg-surface transition-colors group">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-body-bold text-body-bold">Follow up with Kenji Sato</p>
+<p class="text-[11px] text-text-subtle mt-0.5">Job: Senior React Developer @ TechCorp</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-success-green font-body-bold text-[12px] hover:bg-success-green/10 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> Done
+                            </button>
+</div>
+</div>
+<div class="p-4 hover:bg-surface transition-colors group">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-body-bold text-body-bold">Send offer letter to Tanaka-san</p>
+<p class="text-[11px] text-text-subtle mt-0.5">Job: Backend Lead @ FinTech Inc.</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-success-green font-body-bold text-[12px] hover:bg-success-green/10 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> Done
+                            </button>
+</div>
+</div>
+<div class="p-4 hover:bg-surface transition-colors group">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-body-bold text-body-bold">Review CV: Mark Williams</p>
+<p class="text-[11px] text-text-subtle mt-0.5">Source: LinkedIn Inbound</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-success-green font-body-bold text-[12px] hover:bg-success-green/10 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> Done
+                            </button>
+</div>
+</div>
+<div class="p-4 hover:bg-surface transition-colors group">
+<div class="flex justify-between items-start">
+<div>
+<p class="font-body-bold text-body-bold">Coordinate Interview: Yuki Mori</p>
+<p class="text-[11px] text-text-subtle mt-0.5">Job: Cloud Architect @ Nexus Tech Japan</p>
+</div>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-success-green font-body-bold text-[12px] hover:bg-success-green/10 px-2 py-1 rounded">
+<span class="material-symbols-outlined text-[16px]">check_circle</span> Done
+                            </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Section: Recent Placements Table -->
+<div class="bg-surface-container-lowest border border-border-low rounded shadow-sm overflow-hidden">
+<div class="px-margin-page py-4 border-b border-border-low flex justify-between items-center">
+<h2 class="font-headline-page text-headline-page">Recent Placements</h2>
+<button class="text-primary-container font-body-bold text-body-bold hover:underline">Export CSV</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-border-low">
+<th class="px-margin-page py-3 font-label-sm text-label-sm text-text-subtle uppercase">Candidate</th>
+<th class="px-4 py-3 font-label-sm text-label-sm text-text-subtle uppercase">Job</th>
+<th class="px-4 py-3 font-label-sm text-label-sm text-text-subtle uppercase">Client</th>
+<th class="px-4 py-3 font-label-sm text-label-sm text-text-subtle uppercase">Salary (JPY)</th>
+<th class="px-margin-page py-3 font-label-sm text-label-sm text-text-subtle uppercase">Placed Date</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-low">
+<tr class="hover:bg-primary-container/5 transition-colors cursor-pointer h-row-height-standard">
+<td class="px-margin-page py-3">
+<div class="flex items-center">
+<span class="status-dot dot-green"></span>
+<span class="font-body-bold text-body-bold">Kenji Nakamura</span>
+</div>
+</td>
+<td class="px-4 py-3 font-body-main text-body-main">Senior Project Manager</td>
+<td class="px-4 py-3 font-body-main text-body-main">Nexus Tech Japan</td>
+<td class="px-4 py-3 font-data-mono text-data-mono text-primary-container">¥14,000,000</td>
+<td class="px-margin-page py-3 font-body-main text-text-subtle">Oct 24, 2023</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors cursor-pointer h-row-height-standard">
+<td class="px-margin-page py-3">
+<div class="flex items-center">
+<span class="status-dot dot-green"></span>
+<span class="font-body-bold text-body-bold">Airi Watanabe</span>
+</div>
+</td>
+<td class="px-4 py-3 font-body-main text-body-main">UI/UX Designer</td>
+<td class="px-4 py-3 font-body-main text-body-main">Creative Studio Osaka</td>
+<td class="px-4 py-3 font-data-mono text-data-mono text-primary-container">¥8,500,000</td>
+<td class="px-margin-page py-3 font-body-main text-text-subtle">Oct 22, 2023</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors cursor-pointer h-row-height-standard">
+<td class="px-margin-page py-3">
+<div class="flex items-center">
+<span class="status-dot dot-green"></span>
+<span class="font-body-bold text-body-bold">Hiroki Sato</span>
+</div>
+</td>
+<td class="px-4 py-3 font-body-main text-body-main">Backend Engineer (Go)</td>
+<td class="px-4 py-3 font-body-main text-body-main">LogiStream Systems</td>
+<td class="px-4 py-3 font-data-mono text-data-mono text-primary-container">¥11,200,000</td>
+<td class="px-margin-page py-3 font-body-main text-text-subtle">Oct 21, 2023</td>
+</tr>
+<tr class="hover:bg-primary-container/5 transition-colors cursor-pointer h-row-height-standard">
+<td class="px-margin-page py-3">
+<div class="flex items-center">
+<span class="status-dot dot-green"></span>
+<span class="font-body-bold text-body-bold">Elena Rodriguez</span>
+</div>
+</td>
+<td class="px-4 py-3 font-body-main text-body-main">Global HR Director</td>
+<td class="px-4 py-3 font-body-main text-body-main">Beacon International</td>
+<td class="px-4 py-3 font-data-mono text-data-mono text-primary-container">¥18,000,000</td>
+<td class="px-margin-page py-3 font-body-main text-text-subtle">Oct 20, 2023</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+<script>
+        // Micro-interaction for 'Done' buttons
+        document.querySelectorAll('button').forEach(btn => {
+            if(btn.innerText.includes('Done')) {
+                btn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const parent = this.closest('.group');
+                    parent.style.transition = 'all 0.4s ease';
+                    parent.style.opacity = '0';
+                    parent.style.transform = 'translateX(20px)';
+                    setTimeout(() => {
+                        parent.remove();
+                    }, 400);
+                });
+            }
+        });
+    </script>
+</body></html>

@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RecruitSync — UI Design</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<style>
+  .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; font-size: inherit; }
+  :root {
+    --blue:        #0c56d0;
+    --blue-light:  #dae2ff;
+    --blue-dark:   #003d9b;
+    --green:       #36B37E;
+    --green-light: #DCFCE7;
+    --amber:       #FFAB00;
+    --amber-light: #FEF3C7;
+    --red:         #FF5630;
+    --red-light:   #ffdad6;
+    --purple:      #6554C0;
+    --purple-light:#EDE9FE;
+    --teal:        #0D9488;
+    --teal-light:  #CCFBF1;
+    --gray:        #505F79;
+    --gray-light:  #f3f4f6;
+    --gray-border: #DFE1E6;
+    --dark:        #172B4D;
+    --white:       #FFFFFF;
+    --sidebar-w:   256px;
+    --topbar-h:    44px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, -apple-system, sans-serif; background: #f8f9fb; color: var(--dark); font-size: 13px; }
+
+  /* ── Layout shell ── */
+  .app { display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w); background: #ffffff; color: #191c1e;
+    display: flex; flex-direction: column; flex-shrink: 0;
+    overflow-y: auto; border-right: 1px solid var(--gray-border);
+  }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 20px 18px 16px; border-bottom: 1px solid var(--gray-border);
+  }
+  .sidebar-logo-icon { width: 30px; height: 30px; background: var(--blue-dark); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .sidebar-logo-icon .material-symbols-outlined { color: #fff; font-size: 17px; font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 20; }
+  .sidebar-logo-text { font-size: 16px; font-weight: 700; color: var(--dark); letter-spacing: -.3px; line-height: 1; }
+  .sidebar-logo small { display: block; font-size: 9px; color: var(--gray); margin-top: 3px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+  .nav-section { padding: 12px 0 4px; }
+  .nav-label { padding: 0 16px 4px; font-size: 9px; font-weight: 700; letter-spacing: .08em; color: var(--gray); text-transform: uppercase; }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px; padding: 8px 16px;
+    cursor: pointer; border-radius: 0; color: #434654;
+    transition: background .15s, color .15s; font-size: 12.5px;
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { background: var(--gray-light); color: #191c1e; }
+  .nav-item.active { background: rgba(12,86,208,.07); color: var(--blue-dark); border-left-color: var(--blue); font-weight: 600; }
+  .nav-item .material-symbols-outlined { font-size: 18px; width: 18px; font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20; flex-shrink: 0; }
+  .nav-badge { margin-left: auto; background: var(--red); color: #fff; font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 10px; }
+
+  /* ── Main area ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── Top bar ── */
+  .topbar {
+    height: var(--topbar-h); background: #fff; border-bottom: 1px solid var(--gray-border);
+    display: flex; align-items: center; padding: 0 24px; gap: 16px; flex-shrink: 0;
+  }
+  .topbar-title { font-size: 16px; font-weight: 700; color: var(--dark); flex: 1; }
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+  .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 600; cursor: pointer; border: none; transition: opacity .15s; }
+  .btn:hover { opacity: .88; }
+  .btn-primary { background: var(--blue); color: #fff; }
+  .btn-secondary { background: var(--gray-light); color: var(--dark); border: 1px solid var(--gray-border); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-ghost { background: transparent; color: var(--gray); border: 1px solid var(--gray-border); }
+  .btn-sm { padding: 4px 10px; font-size: 11.5px; }
+  .btn-xs { padding: 2px 7px; font-size: 10.5px; border-radius: 4px; }
+
+  /* ── Content ── */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* ── Screens (shown/hidden) ── */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* ── Cards ── */
+  .card { background: #fff; border: 1px solid var(--gray-border); border-radius: 10px; }
+  .card-body { padding: 20px; }
+  .card-header { padding: 14px 20px; border-bottom: 1px solid var(--gray-border); display: flex; align-items: center; gap: 10px; }
+  .card-header h3 { font-size: 13.5px; font-weight: 700; flex: 1; }
+
+  /* ── Metric cards ── */
+  .metric-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 20px; }
+  .metric-card { background: #fff; border: 1px solid var(--gray-border); border-radius: 10px; padding: 18px 20px; border-top: 3px solid; }
+  .metric-card .val { font-size: 28px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+  .metric-card .lbl { font-size: 11.5px; color: var(--gray); font-weight: 500; }
+  .metric-card.blue   { border-top-color: var(--blue);   } .metric-card.blue   .val { color: var(--blue); }
+  .metric-card.teal   { border-top-color: var(--teal);   } .metric-card.teal   .val { color: var(--teal); }
+  .metric-card.purple { border-top-color: var(--purple); } .metric-card.purple .val { color: var(--purple); }
+  .metric-card.red    { border-top-color: var(--red);    } .metric-card.red    .val { color: var(--red); }
+
+  /* ── Badges ── */
+  .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 99px; font-size: 10.5px; font-weight: 600; }
+  .badge-blue   { background: var(--blue-light);   color: var(--blue); }
+  .badge-green  { background: var(--green-light);  color: var(--green); }
+  .badge-amber  { background: var(--amber-light);  color: var(--amber); }
+  .badge-red    { background: var(--red-light);    color: var(--red); }
+  .badge-gray   { background: var(--gray-light);   color: var(--gray); }
+  .badge-purple { background: var(--purple-light); color: var(--purple); }
+  .badge-teal   { background: var(--teal-light);   color: var(--teal); }
+
+  /* ── Status dot ── */
+  .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .dot-green  { background: var(--green); }
+  .dot-amber  { background: var(--amber); }
+  .dot-red    { background: var(--red); }
+
+  /* ── Tables ── */
+  .tbl { width: 100%; border-collapse: collapse; }
+  .tbl th { text-align: left; font-size: 11px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .05em; padding: 10px 14px; background: var(--gray-light); border-bottom: 1px solid var(--gray-border); }
+  .tbl td { padding: 11px 14px; border-bottom: 1px solid var(--gray-border); font-size: 12.5px; vertical-align: middle; }
+  .tbl tr:hover td { background: #F8FAFC; }
+  .tbl tr:last-child td { border-bottom: none; }
+
+  /* ── Search/filter bar ── */
+  .filter-bar { display: flex; gap: 10px; margin-bottom: 16px; align-items: center; }
+  .search-wrap { position: relative; flex: 1; max-width: 320px; }
+  .search-wrap input { width: 100%; padding: 7px 12px 7px 34px; border: 1px solid var(--gray-border); border-radius: 7px; font-size: 12.5px; background: #fff; color: var(--dark); outline: none; }
+  .search-wrap::before { content: '🔍'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 12px; }
+  .select-filter { padding: 7px 12px; border: 1px solid var(--gray-border); border-radius: 7px; font-size: 12.5px; background: #fff; color: var(--dark); outline: none; }
+  .ml-auto { margin-left: auto; }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; border-bottom: 2px solid var(--gray-border); margin-bottom: 20px; }
+  .tab { padding: 10px 18px; font-size: 12.5px; font-weight: 600; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+
+  /* ── Form ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: 11.5px; font-weight: 600; color: var(--gray); }
+  .form-group input, .form-group select, .form-group textarea {
+    padding: 8px 12px; border: 1px solid var(--gray-border); border-radius: 7px;
+    font-size: 12.5px; color: var(--dark); background: #fff; outline: none;
+    transition: border-color .15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--blue); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+  .form-actions { display: flex; gap: 10px; padding-top: 16px; border-top: 1px solid var(--gray-border); margin-top: 4px; }
+
+  /* ── Pipeline board ── */
+  .pipeline-wrap { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 16px; min-height: 520px; }
+  .pipeline-col { min-width: 200px; width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; }
+  .pipeline-col-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px; border-radius: 8px; font-size: 11.5px; font-weight: 700; color: #fff;
+  }
+  .pipeline-col-header .count { background: rgba(255,255,255,.25); border-radius: 99px; padding: 1px 7px; font-size: 10.5px; }
+  .col-sourced   .pipeline-col-header { background: var(--gray); }
+  .col-screening .pipeline-col-header { background: var(--blue); }
+  .col-interview .pipeline-col-header { background: var(--teal); }
+  .col-offered   .pipeline-col-header { background: var(--purple); }
+  .col-placed    .pipeline-col-header { background: var(--green); }
+  .col-rejected  .pipeline-col-header { background: var(--red); }
+  .pipeline-cards { flex: 1; background: #F1F5F9; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 8px; min-height: 400px; }
+  .candidate-card {
+    background: #fff; border: 1px solid var(--gray-border); border-radius: 8px; padding: 12px;
+    cursor: pointer; transition: box-shadow .15s, transform .1s;
+  }
+  .candidate-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.08); transform: translateY(-1px); }
+  .card-top { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; }
+  .card-name { font-weight: 700; font-size: 12.5px; flex: 1; }
+  .card-skills { font-size: 11px; color: var(--gray); margin-bottom: 7px; }
+  .card-divider { border: none; border-top: 1px solid var(--gray-border); margin: 7px 0; }
+  .card-log { font-size: 10.5px; color: var(--gray); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-reminder { font-size: 10px; color: var(--blue); margin-top: 5px; }
+  .empty-col { border: 2px dashed var(--gray-border); border-radius: 8px; min-height: 80px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #CBD5E1; text-align: center; padding: 16px; }
+  .col-rejected .candidate-card { opacity: .6; }
+
+  /* ── Reminders ── */
+  .reminder-section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--gray); margin-bottom: 8px; margin-top: 16px; }
+  .reminder-row {
+    display: flex; align-items: center; gap: 12px; padding: 11px 14px;
+    background: #fff; border: 1px solid var(--gray-border); border-radius: 8px; margin-bottom: 6px;
+  }
+  .reminder-row.overdue { background: var(--red-light); border-color: #FECACA; }
+  .reminder-row.today   { background: var(--amber-light); border-color: #FDE68A; }
+  .reminder-info { flex: 1; }
+  .reminder-task { font-size: 12.5px; font-weight: 600; margin-bottom: 2px; }
+  .reminder-meta { font-size: 11px; color: var(--gray); }
+  .reminder-date { font-size: 11px; font-weight: 700; color: var(--red); margin-right: 10px; }
+  .reminder-date.today { color: var(--amber); }
+  .reminder-date.upcoming { color: var(--gray); }
+  .reminder-actions { display: flex; gap: 6px; }
+
+  /* ── Activity log ── */
+  .log-feed { display: flex; flex-direction: column; gap: 10px; }
+  .log-entry { background: #fff; border: 1px solid var(--gray-border); border-radius: 8px; padding: 13px 16px; }
+  .log-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .log-body { font-size: 12px; color: var(--dark); line-height: 1.5; }
+  .log-next { font-size: 11px; color: var(--blue); margin-top: 5px; }
+  .log-meta { font-size: 10.5px; color: var(--gray); }
+
+  /* ── Dashboard charts ── */
+  .dash-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-label { width: 75px; font-size: 11px; color: var(--gray); text-align: right; flex-shrink: 0; }
+  .bar-track { flex: 1; background: var(--gray-light); border-radius: 99px; height: 14px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; transition: width .4s; }
+  .bar-count { width: 20px; font-size: 11px; font-weight: 700; color: var(--dark); }
+
+  /* ── CV Upload ── */
+  .upload-zone {
+    border: 2px dashed var(--gray-border); border-radius: 10px; padding: 32px 24px;
+    text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
+  }
+  .upload-zone:hover, .upload-zone.active { border-color: var(--blue); background: var(--blue-light); }
+  .upload-zone .icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-zone h4 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .upload-zone p { font-size: 11px; color: var(--gray); }
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+  .upload-zone.file1 { border-color: var(--blue); }
+
+  /* ── File workspace ── */
+  .folder-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .folder-card {
+    background: #fff; border: 1px solid var(--gray-border); border-radius: 10px; padding: 16px;
+    cursor: pointer; transition: box-shadow .15s, border-color .15s;
+  }
+  .folder-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.07); border-color: var(--blue); }
+  .folder-icon { font-size: 28px; margin-bottom: 8px; }
+  .folder-name { font-size: 12.5px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+  .folder-meta { font-size: 10.5px; color: var(--gray); }
+
+  /* ── Info cards row ── */
+  .info-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .info-card { background: #fff; border: 1px solid var(--gray-border); border-radius: 10px; padding: 16px; }
+  .info-card h4 { font-size: 10.5px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+  .info-row { display: flex; gap: 6px; margin-bottom: 5px; align-items: center; font-size: 12px; }
+  .info-key { color: var(--gray); min-width: 80px; }
+  .info-val { color: var(--dark); font-weight: 500; }
+
+  /* ── Login screen ── */
+  .login-bg { min-height: 100vh; background: linear-gradient(135deg, #001848 0%, #003d9b 100%); display: flex; align-items: center; justify-content: center; }
+  .login-card { background: #fff; border-radius: 14px; padding: 40px; width: 380px; box-shadow: 0 25px 50px rgba(0,0,0,.3); }
+  .login-logo { text-align: center; margin-bottom: 28px; }
+  .login-logo h1 { font-size: 24px; font-weight: 800; color: var(--blue-dark); }
+  .login-logo p { font-size: 12px; color: var(--gray); margin-top: 4px; }
+  .login-card .form-group { margin-bottom: 14px; }
+  .login-card .form-group label { font-size: 12px; font-weight: 600; color: var(--dark); display: block; margin-bottom: 5px; }
+  .login-card .form-group input { width: 100%; padding: 10px 13px; font-size: 13px; }
+  .login-footer { text-align: center; margin-top: 20px; font-size: 10.5px; color: var(--gray); }
+
+  /* ── Breadcrumb ── */
+  .breadcrumb { font-size: 12px; color: var(--gray); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb a { color: var(--blue); cursor: pointer; text-decoration: none; }
+  .breadcrumb a:hover { text-decoration: underline; }
+
+  /* ── Onboarding ── */
+  .onboard-wrap { max-width: 560px; margin: 60px auto; text-align: center; }
+  .onboard-steps { display: flex; align-items: center; justify-content: center; gap: 0; margin: 32px 0; }
+  .step-circle { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .step-circle.done { background: var(--blue); color: #fff; }
+  .step-circle.pending { background: var(--gray-light); color: var(--gray); border: 2px solid var(--gray-border); }
+  .step-line { width: 60px; height: 2px; background: var(--gray-border); }
+  .step-line.done { background: var(--blue); }
+  .step-label { font-size: 11px; color: var(--gray); margin-top: 6px; }
+  .onboard-steps-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+
+  /* ── Empty state ── */
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--gray); }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 6px; }
+  .empty-state p { font-size: 12px; }
+
+  /* ── Section heading ── */
+  .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-head h2 { font-size: 14px; font-weight: 700; }
+
+  /* ── Two col layout ── */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* ── Candidate profile stats ── */
+  .profile-header { display: flex; align-items: center; gap: 16px; margin-bottom: 20px; }
+  .profile-avatar { width: 52px; height: 52px; border-radius: 50%; background: var(--blue); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+
+  /* ── Progress step bar ── */
+  .cv-steps { display: flex; align-items: center; margin-bottom: 28px; }
+  .cv-step { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; }
+  .cv-step-num { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .cv-step.done .cv-step-num { background: var(--blue); color: #fff; }
+  .cv-step.active .cv-step-num { background: var(--blue); color: #fff; box-shadow: 0 0 0 3px var(--blue-light); }
+  .cv-step.pending .cv-step-num { background: var(--gray-light); color: var(--gray); }
+  .cv-step.done .cv-step-label { color: var(--blue); }
+  .cv-step.active .cv-step-label { color: var(--dark); font-weight: 700; }
+  .cv-step.pending .cv-step-label { color: var(--gray); }
+  .cv-step-arrow { margin: 0 10px; color: var(--gray-border); font-size: 14px; }
+
+  /* ── Alert/banner ── */
+  .banner { padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; display: flex; align-items: flex-start; gap: 8px; }
+  .banner-green { background: var(--green-light); color: #166534; border: 1px solid #BBF7D0; }
+  .banner-amber { background: var(--amber-light); color: #92400E; border: 1px solid #FDE68A; }
+  .banner-blue  { background: var(--blue-light);  color: #1E40AF; border: 1px solid #BFDBFE; }
+
+  /* ── Template card ── */
+  .template-options { display: flex; flex-direction: column; gap: 10px; }
+  .template-opt { display: flex; align-items: center; gap: 12px; padding: 13px 16px; border: 2px solid var(--gray-border); border-radius: 10px; cursor: pointer; transition: border-color .15s; }
+  .template-opt.selected { border-color: var(--blue); background: var(--blue-light); }
+  .template-opt-radio { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--gray-border); flex-shrink: 0; }
+  .template-opt.selected .template-opt-radio { border-color: var(--blue); background: var(--blue); box-shadow: inset 0 0 0 3px #fff; }
+  .template-opt-info h4 { font-size: 12.5px; font-weight: 700; margin-bottom: 2px; }
+  .template-opt-info p { font-size: 11px; color: var(--gray); }
+
+  /* ── Screen nav pills ── */
+  .screen-nav { display: flex; gap: 6px; flex-wrap: wrap; padding: 0 24px 0; background: #fff; border-bottom: 1px solid var(--gray-border); overflow-x: auto; }
+  .screen-pill { padding: 10px 14px; font-size: 11.5px; font-weight: 600; color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+  .screen-pill:hover { color: var(--dark); }
+  .screen-pill.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+  /* ── Misc ── */
+  .gap-8  { gap: 8px; }
+  .flex   { display: flex; }
+  .flex-col { display: flex; flex-direction: column; }
+  .items-center { align-items: center; }
+  .justify-between { justify-content: space-between; }
+  .font-bold { font-weight: 700; }
+  .text-gray { color: var(--gray); }
+  .text-sm { font-size: 11.5px; }
+  .text-xs { font-size: 10.5px; }
+  .mt-1 { margin-top: 4px; }
+  .mt-2 { margin-top: 8px; }
+  .mt-3 { margin-top: 12px; }
+  .mb-1 { margin-bottom: 4px; }
+  .mb-2 { margin-bottom: 8px; }
+  .mb-3 { margin-bottom: 12px; }
+  .mb-4 { margin-bottom: 16px; }
+  .p-3  { padding: 12px; }
+  .rounded { border-radius: 8px; }
+  .bg-gray { background: var(--gray-light); }
+  .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ LOGIN (standalone) ═══════════════════ -->
+<div id="screen-login" class="login-bg" style="display:none;">
+  <div class="login-card">
+    <div class="login-logo">
+      <h1>RecruitSync</h1>
+      <p>International Recruitment CRM</p>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" placeholder="you@agency.com" value="tanaka@agency.jp">
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" placeholder="••••••••" value="password">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px;padding:10px;" onclick="showApp()">Log In</button>
+    <div class="login-footer">RecruitSync V1 · Internal use only</div>
+  </div>
+</div>
+
+<!-- ═══════════════════ MAIN APP SHELL ═══════════════════ -->
+<div class="app" id="app-shell" style="display:none;">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon"><span class="material-symbols-outlined">bolt</span></div>
+      <div>
+        <div class="sidebar-logo-text">RecruitSync</div>
+        <small>International CRM</small>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-section">
+        <div class="nav-label">Overview</div>
+        <div class="nav-item active" onclick="showScreen('dashboard')">
+          <span class="material-symbols-outlined">dashboard</span> Dashboard
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">CRM</div>
+        <div class="nav-item" onclick="showScreen('clients')">
+          <span class="material-symbols-outlined">business</span> Clients
+        </div>
+        <div class="nav-item" onclick="showScreen('jobs')">
+          <span class="material-symbols-outlined">work</span> Jobs
+        </div>
+        <div class="nav-item" onclick="showScreen('candidates')">
+          <span class="material-symbols-outlined">person_search</span> Candidates
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Pipeline</div>
+        <div class="nav-item" onclick="showScreen('recruiter-pipeline')">
+          <span class="material-symbols-outlined">view_kanban</span> Pipeline
+        </div>
+        <div class="nav-item" onclick="showScreen('activity')">
+          <span class="material-symbols-outlined">history</span> Activity Logs
+        </div>
+        <div class="nav-item" onclick="showScreen('reminders')">
+          <span class="material-symbols-outlined">notifications</span> Reminders
+          <span class="nav-badge">3</span>
+        </div>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">Files &amp; CV</div>
+        <div class="nav-item" onclick="showScreen('files')">
+          <span class="material-symbols-outlined">folder_open</span> File Workspace
+        </div>
+        <div class="nav-item" onclick="showScreen('upload-cv')">
+          <span class="material-symbols-outlined">upload_file</span> Upload CV
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main">
+
+    <!-- Screen nav (screen tabs) -->
+    <div class="screen-nav">
+      <div class="screen-pill active" onclick="showScreen('dashboard')">Dashboard</div>
+      <div class="screen-pill" onclick="showScreen('clients')">Clients</div>
+      <div class="screen-pill" onclick="showScreen('client-detail')">Client Detail</div>
+      <div class="screen-pill" onclick="showScreen('jobs')">Jobs</div>
+      <div class="screen-pill" onclick="showScreen('job-detail')">Job Detail</div>
+      <div class="screen-pill" onclick="showScreen('recruiter-pipeline')">Pipeline</div>
+      <div class="screen-pill" onclick="showScreen('candidates')">Candidates</div>
+      <div class="screen-pill" onclick="showScreen('candidate-profile')">Candidate Profile</div>
+      <div class="screen-pill" onclick="showScreen('upload-cv')">Upload CV</div>
+      <div class="screen-pill" onclick="showScreen('cv-review')">CV Review</div>
+      <div class="screen-pill" onclick="showScreen('cv-template')">CV Template</div>
+      <div class="screen-pill" onclick="showScreen('activity')">Activity Logs</div>
+      <div class="screen-pill" onclick="showScreen('reminders')">Reminders</div>
+      <div class="screen-pill" onclick="showScreen('files')">File Workspace</div>
+      <div class="screen-pill" onclick="showScreen('onboarding')">Onboarding</div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: DASHBOARD
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-dashboard" class="screen active">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Dashboard</span>
+          <div class="topbar-actions">
+            <select class="select-filter"><option>This month</option><option>Last 30 days</option><option>All time</option></select>
+          </div>
+        </div>
+
+        <!-- Metric cards -->
+        <div class="metric-grid">
+          <div class="metric-card blue" onclick="showScreen('jobs')" style="cursor:pointer;">
+            <div class="val">24</div>
+            <div class="lbl">Active Jobs</div>
+          </div>
+          <div class="metric-card teal">
+            <div class="val">11</div>
+            <div class="lbl">In Screening</div>
+          </div>
+          <div class="metric-card purple">
+            <div class="val">8</div>
+            <div class="lbl">Interviews Today</div>
+          </div>
+          <div class="metric-card red" onclick="showScreen('reminders')" style="cursor:pointer;">
+            <div class="val">3</div>
+            <div class="lbl">Reminders Due</div>
+          </div>
+        </div>
+
+        <!-- Two-column: chart + reminders -->
+        <div class="dash-grid">
+          <!-- Bar chart -->
+          <div class="card">
+            <div class="card-header"><h3>Candidates by Stage</h3></div>
+            <div class="card-body">
+              <div class="bar-row">
+                <div class="bar-label">Sourced</div>
+                <div class="bar-track"><div class="bar-fill" style="width:43%;background:var(--gray)"></div></div>
+                <div class="bar-count">6</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Screening</div>
+                <div class="bar-track"><div class="bar-fill" style="width:78%;background:var(--blue)"></div></div>
+                <div class="bar-count">11</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Interview</div>
+                <div class="bar-track"><div class="bar-fill" style="width:57%;background:var(--teal)"></div></div>
+                <div class="bar-count">8</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Offered</div>
+                <div class="bar-track"><div class="bar-fill" style="width:21%;background:var(--purple)"></div></div>
+                <div class="bar-count">3</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Placed</div>
+                <div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--green)"></div></div>
+                <div class="bar-count">14</div>
+              </div>
+              <div class="bar-row">
+                <div class="bar-label">Rejected</div>
+                <div class="bar-track"><div class="bar-fill" style="width:29%;background:var(--red)"></div></div>
+                <div class="bar-count">4</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Due today -->
+          <div class="card">
+            <div class="card-header"><h3>Due Today</h3><button class="btn btn-secondary btn-sm" onclick="showScreen('reminders')">View all</button></div>
+            <div class="card-body" style="padding-top:12px;">
+              <div class="reminder-row overdue" style="margin-bottom:8px;">
+                <span class="dot dot-red"></span>
+                <div class="reminder-info">
+                  <div class="reminder-task">Follow up — Kim Jae-won</div>
+                  <div class="reminder-meta">Senior Java Eng · Nexus Systems</div>
+                </div>
+                <span class="reminder-date">3d overdue</span>
+                <button class="btn btn-secondary btn-xs">Done</button>
+              </div>
+              <div class="reminder-row today" style="margin-bottom:8px;">
+                <span class="dot dot-amber"></span>
+                <div class="reminder-info">
+                  <div class="reminder-task">Send offer letter — Sato M.</div>
+                  <div class="reminder-meta">Finance Analyst · Atlas Fintech</div>
+                </div>
+                <span class="reminder-date today">Today</span>
+                <button class="btn btn-secondary btn-xs">Done</button>
+              </div>
+              <div class="reminder-row today">
+                <span class="dot dot-amber"></span>
+                <div class="reminder-info">
+                  <div class="reminder-task">CV review — Park Ji-su</div>
+                  <div class="reminder-meta">DevOps · Toyota IT</div>
+                </div>
+                <span class="reminder-date today">Today</span>
+                <button class="btn btn-secondary btn-xs">Done</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent placements -->
+        <div class="card">
+          <div class="card-header"><h3>Recent Placements</h3></div>
+          <table class="tbl">
+            <thead>
+              <tr><th>Candidate</th><th>Job</th><th>Client</th><th>Placed date</th><th>Salary (JPY)</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="font-bold">Chen Li</span></td>
+                <td>Senior Java Engineer</td>
+                <td>Nexus Systems K.K.</td>
+                <td>2026-06-10</td>
+                <td class="font-bold" style="color:var(--green);">¥9,000,000</td>
+              </tr>
+              <tr>
+                <td><span class="font-bold">Aung Aung</span></td>
+                <td>Business Analyst</td>
+                <td>Mitsubishi Trading</td>
+                <td>2026-05-28</td>
+                <td class="font-bold" style="color:var(--green);">¥7,500,000</td>
+              </tr>
+              <tr>
+                <td><span class="font-bold">Yamamoto K.</span></td>
+                <td>Cloud Infrastructure Eng</td>
+                <td>Toyota IT Systems</td>
+                <td>2026-05-14</td>
+                <td class="font-bold" style="color:var(--green);">¥11,200,000</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: CLIENT LIST
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-clients" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Clients</span>
+          <div class="topbar-actions">
+            <button class="btn btn-primary">+ Add client</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-wrap"><input type="text" placeholder="Search clients…" value=""></div>
+          <select class="select-filter"><option>All industries</option><option>Technology</option><option>Finance</option><option>Manufacturing</option></select>
+        </div>
+        <div class="card">
+          <table class="tbl">
+            <thead>
+              <tr><th>Company</th><th>Contact person</th><th>Industry</th><th>Active jobs</th><th>Last contact</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="font-bold">Nexus Systems K.K.</span></td>
+                <td>Yamamoto Jiro</td>
+                <td><span class="badge badge-blue">Technology</span></td>
+                <td>5</td>
+                <td><span class="dot dot-green"></span> <span class="text-sm">3 days ago</span></td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('client-detail')">View →</button></td>
+              </tr>
+              <tr>
+                <td><span class="font-bold">Atlas Fintech Ltd.</span></td>
+                <td>Nakamura Yuki</td>
+                <td><span class="badge badge-purple">Finance</span></td>
+                <td>3</td>
+                <td><span class="dot dot-amber"></span> <span class="text-sm">9 days ago</span></td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('client-detail')">View →</button></td>
+              </tr>
+              <tr>
+                <td><span class="font-bold">Toyota IT Systems</span></td>
+                <td>Suzuki Hiroshi</span></td>
+                <td><span class="badge badge-teal">Manufacturing</span></td>
+                <td>7</td>
+                <td><span class="dot dot-green"></span> <span class="text-sm">1 day ago</span></td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('client-detail')">View →</button></td>
+              </tr>
+              <tr>
+                <td><span class="font-bold">Mitsubishi Trading Co.</span></td>
+                <td>Ito Kenji</td>
+                <td><span class="badge badge-amber">Trading</span></td>
+                <td>2</td>
+                <td><span class="dot dot-red"></span> <span class="text-sm">17 days ago</span></td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('client-detail')">View →</button></td>
+              </tr>
+              <tr>
+                <td><span class="font-bold">SoftBank Robotics</span></td>
+                <td>Kobayashi Mai</td>
+                <td><span class="badge badge-blue">Technology</span></td>
+                <td>4</td>
+                <td><span class="dot dot-green"></span> <span class="text-sm">Today</span></td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('client-detail')">View →</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: CLIENT DETAIL
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-client-detail" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Nexus Systems K.K.</span>
+          <div class="topbar-actions">
+            <button class="btn btn-secondary">Edit</button>
+            <button class="btn btn-primary" onclick="showScreen('jobs')">+ Add job</button>
+          </div>
+        </div>
+        <div class="breadcrumb"><a onclick="showScreen('clients')">← Clients</a> / Nexus Systems K.K.</div>
+        <div class="info-cards">
+          <div class="info-card">
+            <h4>Contact</h4>
+            <div class="info-row"><span class="info-key">Contact</span><span class="info-val">Yamamoto Jiro</span></div>
+            <div class="info-row"><span class="info-key">Email</span><span class="info-val">yamamoto@nexus.co.jp</span></div>
+            <div class="info-row"><span class="info-key">Phone</span><span class="info-val">+81-3-1234-5678</span></div>
+            <div class="info-row"><span class="info-key">Website</span><span class="info-val" style="color:var(--blue);">nexus-sys.co.jp</span></div>
+          </div>
+          <div class="info-card">
+            <h4>Company</h4>
+            <div class="info-row"><span class="info-key">Industry</span><span class="info-val"><span class="badge badge-blue">Technology</span></span></div>
+            <div class="info-row"><span class="info-key">Address</span><span class="info-val">2-5-1 Marunouchi, Tokyo</span></div>
+            <div class="info-row"><span class="info-key">Notes</span><span class="info-val">Prefers N2+ candidates. Fast hiring cycle.</span></div>
+          </div>
+          <div class="info-card">
+            <h4>Activity Summary</h4>
+            <div class="info-row"><span class="info-key">Active jobs</span><span class="info-val font-bold" style="color:var(--blue);">5</span></div>
+            <div class="info-row"><span class="info-key">Last contact</span><span class="info-val"><span class="dot dot-green"></span> 3 days ago</span></div>
+            <div class="info-row"><span class="info-key">Open reminders</span><span class="info-val" style="color:var(--red);">2</span></div>
+            <div class="info-row"><span class="info-key">Placements (YTD)</span><span class="info-val">3</span></div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab(this,'client-jobs')">Jobs</div>
+          <div class="tab" onclick="switchTab(this,'client-logs')">Activity Logs</div>
+          <div class="tab" onclick="switchTab(this,'client-files')">Files</div>
+          <div class="tab" onclick="switchTab(this,'client-reminders')">Reminders</div>
+        </div>
+
+        <div id="client-jobs" class="tab-pane active">
+          <table class="tbl">
+            <thead><tr><th>Job title</th><th>Type</th><th>Status</th><th>Candidates</th><th>Closing date</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="font-bold">Senior Java Engineer</td><td>Full-time</td><td><span class="badge badge-green">Active</span></td><td>4</td><td>2026-08-01</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('job-detail')">View</button></td></tr>
+              <tr><td class="font-bold">DevOps Engineer</td><td>Full-time</td><td><span class="badge badge-green">Active</span></td><td>2</td><td>2026-07-15</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('job-detail')">View</button></td></tr>
+              <tr><td class="font-bold">Project Manager</td><td>Contract</td><td><span class="badge badge-amber">On hold</span></td><td>1</td><td>2026-09-01</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('job-detail')">View</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="client-logs" class="tab-pane">
+          <div class="log-feed">
+            <div class="log-entry">
+              <div class="log-header"><span class="badge badge-blue">Call</span><span class="badge badge-gray">Client</span><span class="log-meta ml-auto">Y. Tanaka · 2026-06-23 14:30</span></div>
+              <div class="log-body">Discussed Java Engineer requirements. Client wants N2 minimum, prefers candidates with Spring Boot experience. Salary range confirmed ¥8M–¥12M.</div>
+              <div class="log-next">→ Send shortlist of 3 candidates by Friday</div>
+            </div>
+            <div class="log-entry">
+              <div class="log-header"><span class="badge badge-purple">Meeting</span><span class="badge badge-gray">Client</span><span class="log-meta ml-auto">J. Park · 2026-06-18 10:00</span></div>
+              <div class="log-body">Onsite meeting at Nexus HQ. Toured office. Met Yamamoto-san and HR lead Tanaka-san. Confirmed 3 open headcount for Q3.</div>
+              <div class="log-next">→ Schedule follow-up call in 2 weeks</div>
+            </div>
+          </div>
+        </div>
+        <div id="client-files" class="tab-pane">
+          <table class="tbl">
+            <thead><tr><th>File</th><th>Uploaded by</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>NexusSystems_NDA_2026.pdf</td><td>Y. Tanaka</td><td>2026-06-10</td><td><button class="btn btn-secondary btn-sm">↓ Download</button></td></tr>
+              <tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>Contract_v2_signed.docx</td><td>J. Yamamoto</td><td>2026-06-15</td><td><button class="btn btn-secondary btn-sm">↓ Download</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="client-reminders" class="tab-pane">
+          <div class="reminder-row overdue"><span class="dot dot-red"></span><div class="reminder-info"><div class="reminder-task">Send shortlist for Java Engineer role</div><div class="reminder-meta">High priority · Assigned: Y. Tanaka</div></div><span class="reminder-date">Jun 23</span><div class="reminder-actions"><button class="btn btn-ghost btn-sm">Reschedule</button><button class="btn btn-primary btn-sm">Done</button></div></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: JOB LIST
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-jobs" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Jobs</span>
+          <div class="topbar-actions"><button class="btn btn-primary">+ Add job</button></div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-wrap"><input type="text" placeholder="Search jobs…"></div>
+          <select class="select-filter"><option>All clients</option><option>Nexus Systems</option><option>Atlas Fintech</option><option>Toyota IT</option></select>
+          <select class="select-filter"><option>All statuses</option><option>Active</option><option>On hold</option><option>Closed</option></select>
+        </div>
+        <div class="card">
+          <table class="tbl">
+            <thead><tr><th>Job title</th><th>Client</th><th>Type</th><th>Status</th><th>Candidates</th><th>Closing date</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="font-bold">Senior Java Engineer</td><td>Nexus Systems K.K.</td><td>Full-time</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-blue">4</span></td><td>2026-08-01</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('job-detail')">View →</button></td></tr>
+              <tr><td class="font-bold">Cloud Infra Engineer</td><td>Toyota IT Systems</td><td>Full-time</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-blue">7</span></td><td>2026-07-20</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('job-detail')">View →</button></td></tr>
+              <tr><td class="font-bold">Finance Analyst</td><td>Atlas Fintech Ltd.</td><td>Full-time</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-blue">3</span></td><td>2026-07-31</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('job-detail')">View →</button></td></tr>
+              <tr><td class="font-bold">Project Manager</td><td>Nexus Systems K.K.</td><td>Contract</td><td><span class="badge badge-amber">On hold</span></td><td><span class="badge badge-gray">1</span></td><td>2026-09-01</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('job-detail')">View →</button></td></tr>
+              <tr><td class="font-bold">UX Designer</td><td>SoftBank Robotics</td><td>Full-time</td><td><span class="badge badge-green">Active</span></td><td><span class="badge badge-blue">2</span></td><td>2026-08-15</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('job-detail')">View →</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: JOB DETAIL
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-job-detail" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Senior Java Engineer — Nexus Systems</span>
+          <div class="topbar-actions">
+            <button class="btn btn-secondary" onclick="showScreen('upload-cv')">Upload CV</button>
+            <button class="btn btn-primary" onclick="showScreen('pipeline')">Pipeline view →</button>
+          </div>
+        </div>
+        <div class="breadcrumb"><a onclick="showScreen('jobs')">← Jobs</a> / Senior Java Engineer</div>
+        <div class="flex gap-8 mb-3" style="flex-wrap:wrap;">
+          <span class="badge badge-green">Active</span>
+          <span class="badge badge-gray">Full-time</span>
+          <span class="badge badge-gray">Tokyo</span>
+          <span class="badge badge-blue">N2 Japanese</span>
+          <span class="badge badge-teal">Business English</span>
+          <span class="badge badge-purple">¥8M – ¥12M</span>
+          <span class="badge badge-amber">Closes Aug 1</span>
+        </div>
+
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab(this,'job-candidates')">Candidates (4)</div>
+          <div class="tab" onclick="switchTab(this,'job-logs')">Activity Logs</div>
+          <div class="tab" onclick="switchTab(this,'job-files')">Files</div>
+        </div>
+        <div id="job-candidates" class="tab-pane active">
+          <table class="tbl">
+            <thead><tr><th>Candidate</th><th>Stage</th><th>Applied</th><th>Recruiter</th><th>Next reminder</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="font-bold"><span class="dot dot-red" style="margin-right:6px;"></span>Kim Jae-won</td><td><span class="badge badge-blue">Screening</span></td><td>2026-06-08</td><td>Y. Tanaka</td><td style="color:var(--red);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">warning</span>Overdue</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td></tr>
+              <tr><td class="font-bold"><span class="dot dot-green" style="margin-right:6px;"></span>Aung Aung</td><td><span class="badge badge-teal">Interview</span></td><td>2026-06-12</td><td>J. Park</td><td>Jun 26</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td></tr>
+              <tr><td class="font-bold"><span class="dot dot-green" style="margin-right:6px;"></span>Tanaka Hiroshi</td><td><span class="badge badge-gray">Sourced</span></td><td>2026-06-18</td><td>Y. Tanaka</td><td>Jun 28</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td></tr>
+              <tr><td class="font-bold"><span class="dot dot-green" style="margin-right:6px;"></span>Park Ji-su</td><td><span class="badge badge-gray">Sourced</span></td><td>2026-06-20</td><td>Y. Tanaka</td><td>Jun 27</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="job-logs" class="tab-pane">
+          <div class="log-feed">
+            <div class="log-entry"><div class="log-header"><span class="badge badge-blue">Call</span><span class="log-meta ml-auto">J. Park · 2026-06-24</span></div><div class="log-body">Spoke with Yamamoto-san re: interview schedule for Aung Aung. 1st round confirmed for Thu Jun 26, 10am at Nexus office.</div><div class="log-next">→ Send interview confirmation to candidate</div></div>
+          </div>
+        </div>
+        <div id="job-files" class="tab-pane">
+          <table class="tbl">
+            <thead><tr><th>File</th><th>Uploaded by</th><th>Date</th><th></th></tr></thead>
+            <tbody><tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>Java_Engineer_JD_v2.pdf</td><td>Y. Tanaka</td><td>2026-06-05</td><td><button class="btn btn-secondary btn-sm">↓ Download</button></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: PIPELINE BOARD
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-pipeline" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Senior Java Engineer — Nexus Systems K.K.</span>
+          <div class="topbar-actions">
+            <select class="select-filter"><option>All recruiters</option><option>Y. Tanaka</option><option>J. Park</option></select>
+            <button class="btn btn-secondary" onclick="showScreen('job-detail')">← Job detail</button>
+          </div>
+        </div>
+        <div class="breadcrumb"><a onclick="showScreen('jobs')">← Jobs</a> / Senior Java Engineer / Pipeline</div>
+
+        <!-- Kanban board -->
+        <div class="pipeline-wrap">
+          <!-- Sourced -->
+          <div class="pipeline-col col-sourced">
+            <div class="pipeline-col-header">Sourced <span class="count">2</span></div>
+            <div class="pipeline-cards">
+              <div class="candidate-card">
+                <div class="card-top"><span class="dot dot-green"></span><span class="card-name">Tanaka Hiroshi</span></div>
+                <div class="card-skills">Java, Spring Boot · 6y exp</div>
+                <hr class="card-divider">
+                <div class="card-log">Resume reviewed. Strong backend profile.</div>
+                <div class="card-reminder"><span class="material-symbols-outlined" style="font-size:12px;vertical-align:middle;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">calendar_today</span> Jun 28</div>
+              </div>
+              <div class="candidate-card">
+                <div class="card-top"><span class="dot dot-green"></span><span class="card-name">Park Ji-su</span></div>
+                <div class="card-skills">Python, AWS, Kubernetes · 4y</div>
+                <hr class="card-divider">
+                <div class="card-log">Initial contact made via LinkedIn.</div>
+                <div class="card-reminder"><span class="material-symbols-outlined" style="font-size:12px;vertical-align:middle;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">calendar_today</span> Jun 27</div>
+              </div>
+              <div class="empty-col">Drop candidate here</div>
+            </div>
+          </div>
+
+          <!-- Screening -->
+          <div class="pipeline-col col-screening">
+            <div class="pipeline-col-header">Screening <span class="count">1</span></div>
+            <div class="pipeline-cards">
+              <div class="candidate-card" style="border-left: 3px solid var(--red);">
+                <div class="card-top"><span class="dot dot-red"></span><span class="card-name">Kim Jae-won</span></div>
+                <div class="card-skills">Java, N2, 5y exp · Seoul</div>
+                <hr class="card-divider">
+                <div class="card-log">CV sent 18 days ago. No follow-up.</div>
+                <div class="card-reminder" style="color:var(--red);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">warning</span>Overdue — 3 days</div>
+              </div>
+              <div class="empty-col">Drop candidate here</div>
+            </div>
+          </div>
+
+          <!-- Interview -->
+          <div class="pipeline-col col-interview">
+            <div class="pipeline-col-header">Interview <span class="count">1</span></div>
+            <div class="pipeline-cards">
+              <div class="candidate-card">
+                <div class="card-top"><span class="dot dot-green"></span><span class="card-name">Aung Aung</span></div>
+                <div class="card-skills">Java, N1, 7y exp · Yangon→Tokyo</div>
+                <hr class="card-divider">
+                <div class="card-log">1st round confirmed Thu Jun 26 10am</div>
+                <div class="card-reminder"><span class="material-symbols-outlined" style="font-size:12px;vertical-align:middle;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">calendar_today</span> Jun 26</div>
+              </div>
+              <div class="empty-col">Drop candidate here</div>
+            </div>
+          </div>
+
+          <!-- Offered -->
+          <div class="pipeline-col col-offered">
+            <div class="pipeline-col-header">Offered <span class="count">0</span></div>
+            <div class="pipeline-cards">
+              <div class="empty-col">Drop candidate here</div>
+            </div>
+          </div>
+
+          <!-- Placed -->
+          <div class="pipeline-col col-placed">
+            <div class="pipeline-col-header">Placed <span class="count">1</span></div>
+            <div class="pipeline-cards">
+              <div class="candidate-card" style="opacity:.65;">
+                <div class="card-top"><span class="dot dot-green"></span><span class="card-name">Chen Li</span></div>
+                <div class="card-skills">Java, Spring, N2 · ¥9M</div>
+                <hr class="card-divider">
+                <div class="card-log">Placed 2026-06-10. Start Jul 1.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rejected -->
+          <div class="pipeline-col col-rejected">
+            <div class="pipeline-col-header">Rejected <span class="count">0</span></div>
+            <div class="pipeline-cards">
+              <div class="empty-col">Drop candidate here</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Status dot legend -->
+        <div class="flex gap-8 mt-2 items-center" style="font-size:11px;color:var(--gray);">
+          <span class="dot dot-green"></span> &lt;7 days since contact &nbsp;
+          <span class="dot dot-amber"></span> 7–14 days &nbsp;
+          <span class="dot dot-red"></span> &gt;14 days or overdue
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: RECRUITER PIPELINE
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-recruiter-pipeline" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Pipeline — Y. Tanaka</span>
+        </div>
+        <div class="filter-bar" style="flex-wrap:wrap;">
+          <select class="select-filter"><option>All clients</option><option>Nexus Systems</option><option>Atlas Fintech</option><option>Toyota IT</option></select>
+          <select class="select-filter"><option>All jobs</option><option>Senior Java Engineer</option><option>Finance Analyst</option><option>Cloud Infra Engineer</option></select>
+          <select class="select-filter"><option>Recruiter: Y. Tanaka</option><option>Recruiter: J. Park</option><option>All recruiters</option></select>
+          <select class="select-filter"><option>All stages</option><option>Sourced</option><option>Screening</option><option>Interview</option><option>Offered</option><option>Placed</option><option>Rejected</option></select>
+          <select class="select-filter"><option>Date: Last activity</option><option>Date: Applied date</option></select>
+          <button class="btn btn-secondary btn-sm ml-auto">Clear filters</button>
+        </div>
+        <div class="card">
+          <table class="tbl">
+            <thead>
+              <tr><th>Candidate</th><th>Job</th><th>Client</th><th>Stage</th><th>Applied</th><th>Last activity</th><th>Next reminder</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="font-bold"><span class="dot dot-red" style="margin-right:6px;"></span>Kim Jae-won</td>
+                <td>Senior Java Engineer</td>
+                <td>Nexus Systems K.K.</td>
+                <td><span class="badge badge-blue">Screening</span></td>
+                <td>2026-06-08</td>
+                <td>18 days ago</td>
+                <td style="color:var(--red);"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">warning</span>Overdue</td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td>
+              </tr>
+              <tr>
+                <td class="font-bold"><span class="dot dot-green" style="margin-right:6px;"></span>Tanaka Hiroshi</td>
+                <td>Senior Java Engineer</td>
+                <td>Nexus Systems K.K.</td>
+                <td><span class="badge badge-gray">Sourced</span></td>
+                <td>2026-06-18</td>
+                <td>2 days ago</td>
+                <td>Jun 28</td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td>
+              </tr>
+              <tr>
+                <td class="font-bold"><span class="dot dot-green" style="margin-right:6px;"></span>Park Ji-su</td>
+                <td>Senior Java Engineer</td>
+                <td>Nexus Systems K.K.</td>
+                <td><span class="badge badge-gray">Sourced</span></td>
+                <td>2026-06-20</td>
+                <td>1 day ago</td>
+                <td>Jun 27</td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td>
+              </tr>
+              <tr>
+                <td class="font-bold"><span class="dot dot-amber" style="margin-right:6px;"></span>Sato M.</td>
+                <td>Finance Analyst</td>
+                <td>Atlas Fintech Ltd.</td>
+                <td><span class="badge badge-purple">Offered</span></td>
+                <td>2026-06-02</td>
+                <td>9 days ago</td>
+                <td>Today</td>
+                <td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: CANDIDATES LIST
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-candidates" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Candidates</span>
+          <div class="topbar-actions"><button class="btn btn-primary" onclick="showScreen('upload-cv')">+ Upload CV</button></div>
+        </div>
+        <div class="filter-bar">
+          <div class="search-wrap"><input type="text" placeholder="Search candidates…"></div>
+        </div>
+        <div class="card">
+          <table class="tbl">
+            <thead><tr><th>Name</th><th>Skills</th><th>Experience</th><th>Location</th><th>Active jobs</th><th></th></tr></thead>
+            <tbody>
+              <tr><td class="font-bold"><span class="dot dot-red" style="margin-right:6px;"></span>Kim Jae-won</td><td><span class="badge badge-blue">Java</span> <span class="badge badge-gray">Spring Boot</span></td><td>5 years</td><td>Seoul</td><td>1</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('candidate-profile')">View →</button></td></tr>
+              <tr><td class="font-bold"><span class="dot dot-green" style="margin-right:6px;"></span>Aung Aung</td><td><span class="badge badge-blue">Java</span> <span class="badge badge-teal">AWS</span></td><td>7 years</td><td>Yangon</td><td>2</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('candidate-profile')">View →</button></td></tr>
+              <tr><td class="font-bold"><span class="dot dot-green" style="margin-right:6px;"></span>Park Ji-su</td><td><span class="badge badge-gray">Python</span> <span class="badge badge-teal">Kubernetes</span></td><td>4 years</td><td>Busan</td><td>1</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('candidate-profile')">View →</button></td></tr>
+              <tr><td class="font-bold"><span class="dot dot-green" style="margin-right:6px;"></span>Tanaka Hiroshi</td><td><span class="badge badge-blue">Java</span> <span class="badge badge-purple">Scala</span></td><td>6 years</td><td>Osaka</td><td>1</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('candidate-profile')">View →</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: CANDIDATE PROFILE
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-candidate-profile" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Kim Jae-won</span>
+          <div class="topbar-actions">
+            <button class="btn btn-secondary">Edit</button>
+            <button class="btn btn-primary" onclick="showScreen('upload-cv')">New CV</button>
+          </div>
+        </div>
+        <div class="breadcrumb"><a onclick="showScreen('candidates')">← Candidates</a> / Kim Jae-won</div>
+        <div class="info-cards">
+          <div class="info-card">
+            <h4>Contact</h4>
+            <div class="info-row"><span class="info-key">Name</span><span class="info-val font-bold">Kim Jae-won</span></div>
+            <div class="info-row"><span class="info-key">Email</span><span class="info-val">jaewon.kim@email.com</span></div>
+            <div class="info-row"><span class="info-key">Phone</span><span class="info-val">+82-10-1234-5678</span></div>
+            <div class="info-row"><span class="info-key">Location</span><span class="info-val">Seoul, South Korea</span></div>
+          </div>
+          <div class="info-card">
+            <h4>Profile</h4>
+            <div class="info-row"><span class="info-key">Experience</span><span class="info-val">5 years</span></div>
+            <div class="info-row"><span class="info-key">Source</span><span class="info-val">LinkedIn</span></div>
+            <div class="info-row"><span class="info-key">Japanese</span><span class="info-val"><span class="badge badge-blue">N2</span></span></div>
+            <div class="info-row"><span class="info-key">English</span><span class="info-val"><span class="badge badge-teal">Business</span></span></div>
+          </div>
+          <div class="info-card">
+            <h4>Skills</h4>
+            <div style="display:flex;gap:5px;flex-wrap:wrap;">
+              <span class="badge badge-blue">Java</span>
+              <span class="badge badge-blue">Spring Boot</span>
+              <span class="badge badge-gray">PostgreSQL</span>
+              <span class="badge badge-teal">Docker</span>
+              <span class="badge badge-gray">REST APIs</span>
+              <span class="badge badge-purple">Microservices</span>
+            </div>
+          </div>
+        </div>
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab(this,'cand-jobs')">Linked Jobs (1)</div>
+          <div class="tab" onclick="switchTab(this,'cand-logs')">Activity Logs</div>
+          <div class="tab" onclick="switchTab(this,'cand-files')">Files</div>
+        </div>
+        <div id="cand-jobs" class="tab-pane active">
+          <div class="section-head"><span></span><button class="btn btn-secondary btn-sm">+ Attach to another job</button></div>
+          <table class="tbl">
+            <thead><tr><th>Job</th><th>Client</th><th>Stage</th><th>Applied</th><th>Recruiter</th><th></th></tr></thead>
+            <tbody><tr><td class="font-bold">Senior Java Engineer</td><td>Nexus Systems K.K.</td><td><span class="badge badge-blue">Screening</span></td><td>2026-06-08</td><td>Y. Tanaka</td><td><button class="btn btn-secondary btn-sm" onclick="showScreen('pipeline')">Pipeline</button></td></tr></tbody>
+          </table>
+        </div>
+        <div id="cand-logs" class="tab-pane">
+          <div class="log-feed">
+            <div class="log-entry"><div class="log-header"><span class="badge badge-blue">Call</span><span class="log-meta ml-auto">Y. Tanaka · 2026-06-08</span></div><div class="log-body">Initial phone screen. Candidate is actively job hunting. Available for interviews from July. Strong Java background, N2 confirmed.</div><div class="log-next">→ Send CV to Nexus Systems</div></div>
+          </div>
+        </div>
+        <div id="cand-files" class="tab-pane">
+          <table class="tbl">
+            <thead><tr><th>File</th><th>Uploaded by</th><th>Date</th><th></th></tr></thead>
+            <tbody>
+              <tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>Kim_JaeWon_履歴書.pdf</td><td>Y. Tanaka</td><td>2026-06-08</td><td><button class="btn btn-secondary btn-sm">↓ Download</button></td></tr>
+              <tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>Kim_JaeWon_職務経歴書.pdf</td><td>Y. Tanaka</td><td>2026-06-08</td><td><button class="btn btn-secondary btn-sm">↓ Download</button></td></tr>
+              <tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>Kim_JaeWon_Agency_Standard.docx</td><td>Y. Tanaka</td><td>2026-06-08</td><td><button class="btn btn-secondary btn-sm">↓ Download</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: UPLOAD CV (Step 1/4)
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-upload-cv" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Upload CV</span>
+        </div>
+        <div class="cv-steps">
+          <div class="cv-step active"><div class="cv-step-num">1</div><div class="cv-step-label">Upload</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step pending"><div class="cv-step-num">2</div><div class="cv-step-label">Review</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step pending"><div class="cv-step-num">3</div><div class="cv-step-label">Template</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step pending"><div class="cv-step-num">4</div><div class="cv-step-label">Download</div></div>
+        </div>
+        <div class="card" style="max-width:680px;">
+          <div class="card-body">
+            <div class="form-group mb-4">
+              <label>Candidate name (optional — auto-detected from CV if blank)</label>
+              <input type="text" placeholder="e.g. Kim Jae-won">
+            </div>
+            <div class="upload-grid">
+              <div>
+                <div style="font-size:11.5px;font-weight:700;color:var(--blue);margin-bottom:6px;">File 1 — 履歴書 <span style="color:var(--gray);font-weight:400;">(required)</span></div>
+                <div class="upload-zone file1">
+                  <div class="icon"><span class="material-symbols-outlined" style="font-size:32px;color:var(--blue);">upload_file</span></div>
+                  <h4>Drop file here or click to choose</h4>
+                  <p>PDF · DOCX · Image · Max 10MB</p>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:11.5px;font-weight:700;color:var(--gray);margin-bottom:6px;">File 2 — 職務経歴書 <span style="font-weight:400;">(optional)</span></div>
+                <div class="upload-zone">
+                  <div class="icon"><span class="material-symbols-outlined" style="font-size:32px;color:var(--gray);">description</span></div>
+                  <h4>Drop file here or click to choose</h4>
+                  <p>PDF · DOCX · Image · Max 10MB</p>
+                </div>
+              </div>
+            </div>
+            <div class="form-group mb-4">
+              <label>Output language</label>
+              <select><option>Auto-detect</option><option>Japanese (日本語)</option><option>English</option></select>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="showScreen('cv-review')">Upload &amp; Parse →</button>
+              <button class="btn btn-secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: CV REVIEW (Step 2/4)
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-cv-review" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Parsed Data Review</span>
+        </div>
+        <div class="cv-steps">
+          <div class="cv-step done"><div class="cv-step-num">✓</div><div class="cv-step-label">Upload</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step active"><div class="cv-step-num">2</div><div class="cv-step-label">Review</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step pending"><div class="cv-step-num">3</div><div class="cv-step-label">Template</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step pending"><div class="cv-step-num">4</div><div class="cv-step-label">Download</div></div>
+        </div>
+        <div class="banner banner-green"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:middle;font-variation-settings:'FILL' 1,'wght' 500,'GRAD' 0,'opsz' 20;">check_circle</span> Parsed from 2 files — 履歴書 + 職務経歴書. Review all fields before saving.</div>
+        <div class="card" style="max-width:680px;">
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Full name *</label>
+                <input type="text" value="Kim Jae-won">
+              </div>
+              <div class="form-group">
+                <label>Email</label>
+                <input type="email" value="jaewon.kim@email.com">
+              </div>
+              <div class="form-group">
+                <label>Phone</label>
+                <input type="text" value="+82-10-1234-5678">
+              </div>
+              <div class="form-group">
+                <label>Location</label>
+                <input type="text" value="Seoul, South Korea">
+              </div>
+              <div class="form-group">
+                <label>Experience (years)</label>
+                <input type="text" value="5">
+              </div>
+              <div class="form-group">
+                <label>Source</label>
+                <input type="text" value="LinkedIn">
+              </div>
+              <div class="form-group">
+                <label>Japanese level</label>
+                <select><option>N2</option><option>N1</option><option>N3</option><option>Native</option></select>
+              </div>
+              <div class="form-group">
+                <label>English level</label>
+                <select><option>Business</option><option>Fluent</option><option>Basic</option><option>Native</option></select>
+              </div>
+              <div class="form-group full">
+                <label>Skills</label>
+                <input type="text" value="Java, Spring Boot, PostgreSQL, Docker, REST APIs, Microservices">
+              </div>
+              <div class="form-group full">
+                <label>Education</label>
+                <textarea style="min-height:60px;">Seoul National University — B.Sc. Computer Science (2016–2020)</textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="showScreen('cv-template')">Save &amp; Continue →</button>
+              <button class="btn btn-secondary">Re-parse</button>
+              <button class="btn btn-ghost" onclick="showScreen('upload-cv')">← Back</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: CV TEMPLATE (Step 3/4)
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-cv-template" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Choose Template</span>
+        </div>
+        <div class="cv-steps">
+          <div class="cv-step done"><div class="cv-step-num">✓</div><div class="cv-step-label">Upload</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step done"><div class="cv-step-num">✓</div><div class="cv-step-label">Review</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step active"><div class="cv-step-num">3</div><div class="cv-step-label">Template</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step pending"><div class="cv-step-num">4</div><div class="cv-step-label">Download</div></div>
+        </div>
+        <div style="max-width:560px;">
+          <div class="card mb-4">
+            <div class="card-header"><h3>Choose template</h3></div>
+            <div class="card-body">
+              <div class="template-options">
+                <div class="template-opt selected" onclick="selectTemplate(this)">
+                  <div class="template-opt-radio"></div>
+                  <div class="template-opt-info"><h4>Agency Standard Format</h4><p>English · Company-branded header · Skills table</p></div>
+                </div>
+                <div class="template-opt" onclick="selectTemplate(this)">
+                  <div class="template-opt-radio"></div>
+                  <div class="template-opt-info"><h4>Client A Format</h4><p>English · Tailored for client submission</p></div>
+                </div>
+                <div class="template-opt" onclick="selectTemplate(this)">
+                  <div class="template-opt-radio"></div>
+                  <div class="template-opt-info"><h4>Japanese 履歴書 Format</h4><p>日本語 · JIS-standard layout with photo field</p></div>
+                </div>
+                <div class="template-opt" onclick="selectTemplate(this)">
+                  <div class="template-opt-radio"></div>
+                  <div class="template-opt-info"><h4>Work Experience Sheet 職務経歴書</h4><p>日本語 · Detailed project history</p></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card mb-4">
+            <div class="card-header"><h3>Output type</h3></div>
+            <div class="card-body flex gap-8">
+              <div class="template-opt selected" style="flex:1;" onclick="selectOutputType(this)">
+                <div class="template-opt-radio"></div>
+                <div class="template-opt-info"><h4>DOCX</h4><p>Microsoft Word format</p></div>
+              </div>
+              <div class="template-opt" style="flex:1;" onclick="selectOutputType(this)">
+                <div class="template-opt-radio"></div>
+                <div class="template-opt-info"><h4>PDF</h4><p>Portable Document Format</p></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-actions" style="border:none;padding-top:0;">
+            <button class="btn btn-primary" onclick="showScreen('cv-download')">Generate CV →</button>
+            <button class="btn btn-ghost" onclick="showScreen('cv-review')">← Back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: CV DOWNLOAD (Step 4/4)
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-cv-download" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">CV Generated</span>
+        </div>
+        <div class="cv-steps">
+          <div class="cv-step done"><div class="cv-step-num">✓</div><div class="cv-step-label">Upload</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step done"><div class="cv-step-num">✓</div><div class="cv-step-label">Review</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step done"><div class="cv-step-num">✓</div><div class="cv-step-label">Template</div></div>
+          <div class="cv-step-arrow">›</div>
+          <div class="cv-step active"><div class="cv-step-num">4</div><div class="cv-step-label">Download</div></div>
+        </div>
+        <div style="max-width:480px;margin:40px auto;text-align:center;">
+          <div style="background:var(--green-light);border:1px solid #BBF7D0;border-radius:14px;padding:40px 32px;margin-bottom:20px;">
+            <div style="margin-bottom:12px;"><span class="material-symbols-outlined" style="font-size:48px;color:#36B37E;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 48;">check_circle</span></div>
+            <h2 style="font-size:18px;font-weight:800;color:#166534;margin-bottom:6px;">CV generated successfully</h2>
+            <p style="font-size:12.5px;color:#166534;">Kim_JaeWon_Agency_Standard.docx<br>Agency Standard Format</p>
+          </div>
+          <div class="flex flex-col gap-8">
+            <button class="btn btn-primary" style="justify-content:center;padding:12px;">↓ Download DOCX</button>
+            <button class="btn btn-secondary" style="justify-content:center;" onclick="showScreen('cv-template')">Generate another format</button>
+            <button class="btn btn-ghost" style="justify-content:center;" onclick="showScreen('candidate-profile')">← Back to candidate</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: ACTIVITY LOGS
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-activity" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Activity Logs</span>
+        </div>
+        <div class="two-col" style="gap:20px;">
+          <!-- New log form -->
+          <div class="card" style="align-self:start;">
+            <div class="card-header"><h3>New log entry</h3></div>
+            <div class="card-body">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label>Linked to</label>
+                  <select><option>Candidate</option><option>Client</option><option>Job</option></select>
+                </div>
+                <div class="form-group">
+                  <label>Name</label>
+                  <select><option>Kim Jae-won</option><option>Aung Aung</option><option>Park Ji-su</option></select>
+                </div>
+                <div class="form-group">
+                  <label>Type</label>
+                  <select><option>Call</option><option>Email</option><option>Meeting</option><option>Chat</option></select>
+                </div>
+                <div class="form-group">
+                  <label>Author</label>
+                  <select><option>Y. Tanaka</option><option>J. Park</option></select>
+                </div>
+                <div class="form-group full">
+                  <label>Summary *</label>
+                  <textarea placeholder="What happened in this interaction?"></textarea>
+                </div>
+                <div class="form-group full">
+                  <label>Next action</label>
+                  <input type="text" placeholder="What needs to happen next?">
+                </div>
+              </div>
+              <div class="form-actions" style="border-top:none;padding-top:8px;">
+                <button class="btn btn-primary">Save log</button>
+              </div>
+            </div>
+          </div>
+          <!-- Feed -->
+          <div>
+            <div class="log-feed">
+              <div class="log-entry">
+                <div class="log-header"><span class="badge badge-blue">Call</span><span class="badge badge-gray">Candidate</span><span class="log-meta ml-auto">Y. Tanaka · 2026-06-24 14:30</span></div>
+                <div class="log-body">Spoke with Kim Jae-won. He's still interested in the Java role. Confirmed he can start July 1. Asked to be kept updated.</div>
+                <div class="log-next">→ Follow up after client decision this week</div>
+              </div>
+              <div class="log-entry">
+                <div class="log-header"><span class="badge badge-purple">Meeting</span><span class="badge badge-purple" style="background:#EDE9FE;color:var(--purple);">Client</span><span class="log-meta ml-auto">J. Park · 2026-06-18 10:00</span></div>
+                <div class="log-body">Met Yamamoto-san at Nexus Systems HQ. Discussed Q3 headcount plan. 3 Java engineers needed. N2 minimum confirmed.</div>
+                <div class="log-next">→ Send 3-candidate shortlist by Jun 23</div>
+              </div>
+              <div class="log-entry">
+                <div class="log-header"><span class="badge badge-green" style="background:var(--green-light);color:var(--green);">Email</span><span class="badge badge-teal">Job</span><span class="log-meta ml-auto">Y. Tanaka · 2026-06-15</span></div>
+                <div class="log-body">Sent Aung Aung's formatted CV to Yamamoto-san. Highlighted N1 Japanese and 7 years Spring Boot experience.</div>
+                <div class="log-next">→ Call client Monday for feedback</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: REMINDERS
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-reminders" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">Reminders</span>
+          <div class="topbar-actions">
+            <select class="select-filter"><option>All team</option><option>Y. Tanaka</option><option>J. Park</option></select>
+            <button class="btn btn-primary">+ Add reminder</button>
+          </div>
+        </div>
+
+        <div class="reminder-section-label" style="color:var(--red);margin-top:0;"><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 20;">warning</span>Overdue (2)</div>
+        <div class="reminder-row overdue">
+          <span class="dot dot-red"></span>
+          <div class="reminder-info">
+            <div class="reminder-task">Follow up with Kim Jae-won — Java role status</div>
+            <div class="reminder-meta">Candidate · High priority · Y. Tanaka</div>
+          </div>
+          <span class="reminder-date">Jun 23</span>
+          <div class="reminder-actions">
+            <button class="btn btn-ghost btn-sm">Reschedule</button>
+            <button class="btn btn-primary btn-sm">Done</button>
+          </div>
+        </div>
+        <div class="reminder-row overdue">
+          <span class="dot dot-red"></span>
+          <div class="reminder-info">
+            <div class="reminder-task">Send shortlist to Nexus Systems — 3 Java candidates</div>
+            <div class="reminder-meta">Client · High priority · Y. Tanaka</div>
+          </div>
+          <span class="reminder-date">Jun 23</span>
+          <div class="reminder-actions">
+            <button class="btn btn-ghost btn-sm">Reschedule</button>
+            <button class="btn btn-primary btn-sm">Done</button>
+          </div>
+        </div>
+
+        <div class="reminder-section-label">Today (1)</div>
+        <div class="reminder-row today">
+          <span class="dot dot-amber"></span>
+          <div class="reminder-info">
+            <div class="reminder-task">Confirm interview logistics with Aung Aung</div>
+            <div class="reminder-meta">Candidate · Medium priority · J. Park</div>
+          </div>
+          <span class="reminder-date today">Jun 26</span>
+          <div class="reminder-actions">
+            <button class="btn btn-ghost btn-sm">Reschedule</button>
+            <button class="btn btn-primary btn-sm">Done</button>
+          </div>
+        </div>
+
+        <div class="reminder-section-label">This week (2)</div>
+        <div class="reminder-row">
+          <span class="dot dot-green"></span>
+          <div class="reminder-info">
+            <div class="reminder-task">Check in with Mitsubishi Trading — overdue client outreach</div>
+            <div class="reminder-meta">Client · Low priority · J. Park</div>
+          </div>
+          <span class="reminder-date upcoming">Jun 27</span>
+          <div class="reminder-actions">
+            <button class="btn btn-ghost btn-sm">Reschedule</button>
+            <button class="btn btn-primary btn-sm">Done</button>
+          </div>
+        </div>
+        <div class="reminder-row">
+          <span class="dot dot-green"></span>
+          <div class="reminder-info">
+            <div class="reminder-task">Review Park Ji-su's CV before sending to Toyota IT</div>
+            <div class="reminder-meta">Candidate · Medium priority · Y. Tanaka</div>
+          </div>
+          <span class="reminder-date upcoming">Jun 28</span>
+          <div class="reminder-actions">
+            <button class="btn btn-ghost btn-sm">Reschedule</button>
+            <button class="btn btn-primary btn-sm">Done</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: FILE WORKSPACE
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-files" class="screen">
+        <div class="topbar" style="margin: -24px -24px 24px; padding: 0 24px;">
+          <span class="topbar-title">File Workspace</span>
+        </div>
+
+        <!-- Root view -->
+        <div id="fw-root">
+          <div class="filter-bar">
+            <div class="search-wrap" style="max-width:400px;"><input type="text" placeholder="Search files and folders…"></div>
+          </div>
+          <div class="folder-grid" style="grid-template-columns:repeat(3,1fr);max-width:600px;">
+            <div class="folder-card" onclick="showFWEntity()">
+              <div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">business</span></div>
+              <div class="folder-name">Clients</div>
+              <div class="folder-meta">5 clients · Updated today</div>
+            </div>
+            <div class="folder-card" onclick="showFWEntity()">
+              <div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">person</span></div>
+              <div class="folder-name">Candidates</div>
+              <div class="folder-meta">4 candidates · Updated Jun 24</div>
+            </div>
+            <div class="folder-card" onclick="showFWEntity()">
+              <div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">work</span></div>
+              <div class="folder-name">Jobs</div>
+              <div class="folder-meta">8 jobs · Updated Jun 23</div>
+            </div>
+          </div>
+
+          <div class="section-head"><h2 style="font-size:13px;color:var(--gray);">Recently modified</h2></div>
+          <div class="card">
+            <table class="tbl">
+              <thead><tr><th>Name</th><th>Location</th><th>Modified by</th><th>Date</th></tr></thead>
+              <tbody>
+                <tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>Kim_JaeWon_Agency_Standard.docx</td><td>Candidates / Kim Jae-won / CV</td><td>Y. Tanaka</td><td>Today</td></tr>
+                <tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>NexusSystems_NDA_2026.pdf</td><td>Clients / Nexus Systems / NDA</td><td>J. Yamamoto</td><td>Jun 24</td></tr>
+                <tr><td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>Java_Engineer_JD_v2.pdf</td><td>Jobs / Senior Java Engineer / JD</td><td>Y. Tanaka</td><td>Jun 23</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Entity folder view -->
+        <div id="fw-entity" style="display:none;">
+          <div class="breadcrumb" style="margin-bottom:16px;">
+            <a onclick="showFWRoot()">File Workspace</a> › <a>Clients</a> › <strong>Nexus Systems K.K.</strong>
+          </div>
+          <div class="flex gap-8 mb-4">
+            <button class="btn btn-primary btn-sm">+ New Folder</button>
+            <button class="btn btn-secondary btn-sm">↑ Upload File</button>
+          </div>
+          <div class="folder-grid">
+            <div class="folder-card" onclick="showFWFolder()"><div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">folder</span></div><div class="folder-name">Contracts</div><div class="folder-meta">2 files · Jun 15</div></div>
+            <div class="folder-card" onclick="showFWFolder()"><div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">folder</span></div><div class="folder-name">JD</div><div class="folder-meta">1 file · Jun 5</div></div>
+            <div class="folder-card" onclick="showFWFolder()"><div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">folder</span></div><div class="folder-name">Meeting Notes</div><div class="folder-meta">3 files · Jun 18</div></div>
+            <div class="folder-card" onclick="showFWFolder()"><div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">folder</span></div><div class="folder-name">NDA</div><div class="folder-meta">1 file · Jun 10</div></div>
+            <div class="folder-card" onclick="showFWFolder()"><div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">folder</span></div><div class="folder-name">Visa</div><div class="folder-meta">Empty</div></div>
+            <div class="folder-card" onclick="showFWFolder()"><div class="folder-icon"><span class="material-symbols-outlined" style="font-size:28px;color:var(--blue);">folder</span></div><div class="folder-name">Others</div><div class="folder-meta">Empty</div></div>
+          </div>
+        </div>
+
+        <!-- Folder detail view -->
+        <div id="fw-folder" style="display:none;">
+          <div class="breadcrumb" style="margin-bottom:16px;">
+            <a onclick="showFWRoot()">File Workspace</a> › <a onclick="showFWEntity()">Clients</a> › <a onclick="showFWEntity()">Nexus Systems</a> › <strong>Contracts</strong>
+          </div>
+          <div class="flex gap-8 mb-3">
+            <button class="btn btn-primary btn-sm">↑ Upload File</button>
+            <button class="btn btn-secondary btn-sm">+ New Subfolder</button>
+            <button class="btn btn-secondary btn-sm">↓ Download ZIP</button>
+          </div>
+          <div class="tabs" style="margin-bottom:16px;">
+            <div class="tab active" onclick="switchTab(this,'fw-files-tab')">Files</div>
+            <div class="tab" onclick="switchTab(this,'fw-notes-tab')">Notes</div>
+            <div class="tab" onclick="switchTab(this,'fw-history-tab')">Activity History</div>
+            <div class="tab" onclick="switchTab(this,'fw-members-tab')">Shared Members</div>
+          </div>
+
+          <div id="fw-files-tab" class="tab-pane active">
+            <div class="card" style="border:2px dashed var(--gray-border);background:#FAFBFC;">
+              <table class="tbl">
+                <thead><tr><th><input type="checkbox"></th><th>File name</th><th>Size</th><th>Uploaded by</th><th>Date</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>NexusSystems_NDA_2026.pdf</td>
+                    <td>1.2 MB</td><td>Y. Tanaka</td><td>2026-06-10</td>
+                    <td class="flex gap-8"><button class="btn btn-secondary btn-xs">↓</button><button class="btn btn-ghost btn-xs">Move</button><button class="btn btn-ghost btn-xs">✕</button></td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox"></td>
+                    <td><span class="material-symbols-outlined" style="font-size:14px;vertical-align:middle;color:var(--gray);font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 20;">description</span>Contract_v2_signed.docx</td>
+                    <td>0.8 MB</td><td>J. Yamamoto</td><td>2026-06-15</td>
+                    <td class="flex gap-8"><button class="btn btn-secondary btn-xs">↓</button><button class="btn btn-ghost btn-xs">Move</button><button class="btn btn-ghost btn-xs">✕</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="padding:20px;text-align:center;border-top:1px dashed var(--gray-border);font-size:11.5px;color:var(--blue);">Drop files here to upload</div>
+            </div>
+          </div>
+
+          <div id="fw-notes-tab" class="tab-pane">
+            <div class="card">
+              <div class="card-body">
+                <textarea style="width:100%;min-height:180px;border:none;outline:none;font-size:13px;font-family:inherit;color:var(--dark);resize:none;" placeholder="Add context, checklists, or meeting prep notes here…">Contract review due before Q3 hiring starts.
+- NDA signed ✓
+- MSA pending signature from client legal team
+- Follow up with Yamamoto-san re: amendment clause 4.2</textarea>
+                <div style="font-size:10.5px;color:var(--gray);margin-top:8px;border-top:1px solid var(--gray-border);padding-top:8px;">Last edited by Y. Tanaka · 2026-06-24 09:15</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="fw-history-tab" class="tab-pane">
+            <div class="card">
+              <div class="card-body" style="padding:0;">
+                <div class="log-feed" style="padding:16px;">
+                  <div class="log-entry"><div class="log-header"><span class="badge badge-blue">File uploaded</span><span class="log-meta ml-auto">J. Yamamoto · 2026-06-15 14:22</span></div><div class="log-body">Contract_v2_signed.docx</div></div>
+                  <div class="log-entry"><div class="log-header"><span class="badge badge-gray">Note edited</span><span class="log-meta ml-auto">Y. Tanaka · 2026-06-24 09:15</span></div><div class="log-body">Folder notes updated</div></div>
+                  <div class="log-entry"><div class="log-header"><span class="badge badge-blue">File uploaded</span><span class="log-meta ml-auto">Y. Tanaka · 2026-06-10 11:04</span></div><div class="log-body">NexusSystems_NDA_2026.pdf</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="fw-members-tab" class="tab-pane">
+            <div class="card">
+              <div class="card-body">
+                <div class="banner banner-blue" style="margin-bottom:16px;">All team members have access by default. Per-folder access control coming in v2.</div>
+                <table class="tbl">
+                  <thead><tr><th>Member</th><th>Role</th><th>Access</th></tr></thead>
+                  <tbody>
+                    <tr><td><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;color:var(--gray);">account_circle</span>Yuki Tanaka</td><td><span class="badge badge-purple">Admin</span></td><td>Can view &amp; upload</td></tr>
+                    <tr><td><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;color:var(--gray);">account_circle</span>Ji-su Park</td><td><span class="badge badge-gray">Recruiter</span></td><td>Can view &amp; upload</td></tr>
+                    <tr><td><span class="material-symbols-outlined" style="font-size:16px;vertical-align:middle;color:var(--gray);">account_circle</span>Jiro Yamamoto</td><td><span class="badge badge-gray">Recruiter</span></td><td>Can view &amp; upload</td></tr>
+                  </tbody>
+                </table>
+                <button class="btn btn-ghost btn-sm mt-3" disabled title="All team members have access by default">Invite member</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           SCREEN: ONBOARDING
+      ══════════════════════════════════════════════════════ -->
+      <div id="screen-onboarding" class="screen">
+        <div class="onboard-wrap">
+          <h1 style="font-size:24px;font-weight:800;color:var(--dark);">Welcome to RecruitSync! 👋</h1>
+          <p style="font-size:13px;color:var(--gray);margin-top:8px;">Let's set up your first client and job to get started.</p>
+
+          <div style="display:flex;align-items:flex-start;justify-content:center;gap:0;margin:32px 0;">
+            <div class="onboard-steps-wrap">
+              <div class="step-circle done">1</div>
+              <div class="step-label" style="color:var(--blue);">Add Client</div>
+            </div>
+            <div class="step-line done" style="margin-top:18px;"></div>
+            <div class="onboard-steps-wrap">
+              <div class="step-circle pending">2</div>
+              <div class="step-label">Add Job</div>
+            </div>
+            <div class="step-line" style="margin-top:18px;"></div>
+            <div class="onboard-steps-wrap">
+              <div class="step-circle pending">3</div>
+              <div class="step-label">Upload CV</div>
+            </div>
+          </div>
+
+          <div class="card" style="text-align:left;max-width:420px;margin:0 auto;">
+            <div class="card-body">
+              <h3 style="margin-bottom:4px;">Step 1: Add your first client</h3>
+              <p style="font-size:12px;color:var(--gray);margin-bottom:16px;">Enter the company you're recruiting for — you can add jobs and candidates afterwards.</p>
+              <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="showScreen('clients')">Add your first client →</button>
+              <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:8px;" onclick="showScreen('dashboard')">Skip — existing client</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app-shell -->
+
+<script>
+// ── Initial render: show login ──────────────────────────────────────────────
+window.onload = () => {
+  document.getElementById('screen-login').style.display = 'flex';
+};
+
+function showApp() {
+  document.getElementById('screen-login').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'flex';
+}
+
+// ── Screen switching ────────────────────────────────────────────────────────
+const screenMap = {
+  'dashboard':         'screen-dashboard',
+  'clients':           'screen-clients',
+  'client-detail':     'screen-client-detail',
+  'jobs':              'screen-jobs',
+  'job-detail':        'screen-job-detail',
+  'pipeline':          'screen-pipeline',
+  'recruiter-pipeline':'screen-recruiter-pipeline',
+  'candidates':        'screen-candidates',
+  'candidate-profile': 'screen-candidate-profile',
+  'upload-cv':         'screen-upload-cv',
+  'cv-review':         'screen-cv-review',
+  'cv-template':       'screen-cv-template',
+  'cv-download':       'screen-cv-download',
+  'activity':          'screen-activity',
+  'reminders':         'screen-reminders',
+  'files':             'screen-files',
+  'onboarding':        'screen-onboarding',
+};
+
+function showScreen(name) {
+  // Hide all screens
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  // Show target
+  const el = document.getElementById(screenMap[name]);
+  if (el) el.classList.add('active');
+  // Update screen nav pills
+  document.querySelectorAll('.screen-pill').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.screen-pill').forEach(p => {
+    if (p.getAttribute('onclick') && p.getAttribute('onclick').includes(`'${name}'`)) {
+      p.classList.add('active');
+    }
+  });
+  // Update sidebar
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const sidebarMap = {
+    'dashboard': 0, 'clients': 1, 'jobs': 2, 'candidates': 3,
+    'client-detail': 1, 'job-detail': 2, 'candidate-profile': 3,
+    'recruiter-pipeline': 4, 'pipeline': 4, 'activity': 5, 'reminders': 6,
+    'files': 7, 'upload-cv': 8,
+  };
+  // Reset file workspace sub-views
+  if (name === 'files') {
+    showFWRoot();
+  }
+}
+
+// ── Tab switching ───────────────────────────────────────────────────────────
+function switchTab(el, paneId) {
+  const tabParent = el.closest('.tabs');
+  tabParent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  // Find pane siblings
+  const paneParent = tabParent.nextElementSibling.parentElement;
+  paneParent.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById(paneId);
+  if (target) target.classList.add('active');
+}
+
+// ── Template selection ──────────────────────────────────────────────────────
+function selectTemplate(el) {
+  el.closest('.template-options').querySelectorAll('.template-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function selectOutputType(el) {
+  el.closest('.card-body').querySelectorAll('.template-opt').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+// ── File workspace sub-view navigation ─────────────────────────────────────
+function showFWRoot() {
+  document.getElementById('fw-root').style.display = 'block';
+  document.getElementById('fw-entity').style.display = 'none';
+  document.getElementById('fw-folder').style.display = 'none';
+}
+function showFWEntity() {
+  document.getElementById('fw-root').style.display = 'none';
+  document.getElementById('fw-entity').style.display = 'block';
+  document.getElementById('fw-folder').style.display = 'none';
+}
+function showFWFolder() {
+  document.getElementById('fw-root').style.display = 'none';
+  document.getElementById('fw-entity').style.display = 'none';
+  document.getElementById('fw-folder').style.display = 'block';
+}
+</script>
+</body>
+</html>
