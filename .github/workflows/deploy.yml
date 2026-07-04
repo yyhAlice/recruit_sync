@@ -6,6 +6,7 @@ on:
       - master
     paths:
       - 'src/**'
+      - 'index.html'
       - 'package.json'
       - 'vite.config.ts'
       - '.github/workflows/deploy.yml'
