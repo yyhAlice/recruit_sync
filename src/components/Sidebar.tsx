@@ -19,22 +19,22 @@ const navSections: { title: string; items: NavItem[] }[] = [
     items: [
       { label: 'Clients', icon: 'business', to: '/clients' },
       { label: 'Jobs', icon: 'work', to: '/jobs' },
-      { label: 'Candidates', icon: 'person_search' },
+      { label: 'Candidates', icon: 'person_search', to: '/candidates' },
     ],
   },
   {
     title: 'Pipeline',
     items: [
-      { label: 'Pipeline', icon: 'view_kanban' },
-      { label: 'Activity Logs', icon: 'history' },
-      { label: 'Reminders', icon: 'notifications', badge: '3' },
+      { label: 'Pipeline', icon: 'view_kanban', to: '/jobs' },
+      { label: 'Activity Logs', icon: 'history', to: '/activity' },
+      { label: 'Reminders', icon: 'notifications', badge: '3', to: '/reminders' },
     ],
   },
   {
     title: 'Files & CV',
     items: [
-      { label: 'File Workspace', icon: 'folder_open' },
-      { label: 'Upload CV', icon: 'upload_file' },
+      { label: 'File Workspace', icon: 'folder_open', to: '/files' },
+      { label: 'Upload CV', icon: 'upload_file', to: '/files' },
     ],
   },
 ]
