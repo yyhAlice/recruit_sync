@@ -32,14 +32,17 @@ function fmtTime(ts: string) {
   return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
-// ── Status Badge ────────────────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: ActivityStatus }) {
-  const labels: Record<ActivityStatus, string> = {
-    completed: 'Completed', pending: 'Pending', cancelled: 'Cancelled', info: 'Info',
-  }
+// ── Status Label (compact inline) ───────────────────────────────────────────────
+const STATUS_DOT: Record<ActivityStatus, string> = {
+  completed: '🟢', pending: '🟡', cancelled: '⚫', info: '🔵',
+}
+const STATUS_LABEL_TEXT: Record<ActivityStatus, string> = {
+  completed: 'Completed', pending: 'Pending', cancelled: 'Cancelled', info: 'Info',
+}
+function StatusLabel({ status }: { status: ActivityStatus }) {
   return (
-    <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[status]}`}>
-      {labels[status]}
+    <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
+      {STATUS_DOT[status]} {STATUS_LABEL_TEXT[status]}
     </span>
   )
 }
@@ -92,7 +95,7 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
           {/* Badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <TypeChip type={item.type} />
-            <StatusBadge status={item.status} />
+            <StatusLabel status={item.status} />
           </div>
 
           {/* Entities */}
@@ -165,63 +168,37 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
 
 // ── Feed Activity Item ───────────────────────────────────────────────────────────
 function ActivityItem({ item, onView }: { item: Activity; onView: () => void }) {
+  const context = [item.clientName, item.jobTitle, item.candidateName].filter(Boolean).join(' · ')
   return (
-    <div className="group flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
-      {/* Time */}
-      <div className="w-10 flex-shrink-0 pt-0.5">
-        <span className="text-[11px] font-medium text-slate-400 tabular-nums">{fmtTime(item.timestamp)}</span>
-      </div>
-
+    <div
+      className="group flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
+      onClick={onView}
+    >
       {/* Icon */}
-      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm ${ACTIVITY_COLORS[item.type]}`}>
+      <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-xs mt-0.5 ${ACTIVITY_COLORS[item.type]}`}>
         {ACTIVITY_EMOJI[item.type]}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-start gap-2 mb-1">
-          <p className="text-sm font-semibold text-slate-800 leading-snug flex-1 min-w-0">{item.title}</p>
-          <StatusBadge status={item.status} />
+        {/* Line 1: title · time · status */}
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="text-[13px] font-semibold text-slate-800 leading-snug truncate">{item.title}</p>
+          <span className="text-slate-300 flex-shrink-0">·</span>
+          <span className="text-[11px] text-slate-400 tabular-nums flex-shrink-0">{fmtTime(item.timestamp)}</span>
+          <span className="text-slate-200 flex-shrink-0">·</span>
+          <StatusLabel status={item.status} />
         </div>
-
-        {/* Entity tags */}
-        <div className="flex items-center gap-2 flex-wrap mb-1.5">
-          {item.clientName && (
-            <span className="text-[11px] text-slate-500">
-              <span className="text-slate-300">Client:</span> {item.clientName}
-            </span>
-          )}
-          {item.candidateName && (
-            <span className="text-[11px] text-slate-500">
-              <span className="text-slate-300">·</span> <span className="text-slate-300">Candidate:</span> {item.candidateName}
-            </span>
-          )}
-          {item.jobTitle && (
-            <span className="text-[11px] text-slate-500">
-              <span className="text-slate-300">·</span> <span className="text-slate-300">Job:</span> {item.jobTitle}
-            </span>
-          )}
-        </div>
-
-        <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{item.summary}</p>
-
-        {item.nextAction && (
-          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-primary font-medium">
-            <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>arrow_forward</span>
-            {item.nextAction}
-          </div>
+        {/* Line 2: context */}
+        {context && (
+          <p className="text-[11px] text-slate-400 mt-0.5 truncate">{context}</p>
         )}
       </div>
 
-      {/* Recruiter + Action */}
-      <div className="flex-shrink-0 flex flex-col items-end gap-2">
-        <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">{item.recruiterName}</span>
-        <button
-          onClick={onView}
-          className="text-[11px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline whitespace-nowrap"
-        >
-          View Details
-        </button>
+      {/* Recruiter */}
+      <div className="flex-shrink-0 flex items-center gap-3 mt-0.5">
+        <span className="text-[11px] text-slate-400 whitespace-nowrap">{item.recruiterName}</span>
+        <span className="material-symbols-outlined text-slate-200 group-hover:text-slate-400 transition-colors" style={{ fontSize: '14px' }}>chevron_right</span>
       </div>
     </div>
   )
@@ -230,9 +207,9 @@ function ActivityItem({ item, onView }: { item: Activity; onView: () => void }) 
 // ── Date Separator ───────────────────────────────────────────────────────────────
 function DateSeparator({ label, count }: { label: string; count: number }) {
   return (
-    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
-      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{label}</span>
-      <span className="text-[10px] text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded-full font-medium">{count}</span>
+    <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
+      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded-full font-medium tabular-nums">{count}</span>
     </div>
   )
 }
@@ -264,7 +241,7 @@ function TableView({ items, onView }: { items: Activity[]; onView: (a: Activity)
               <td className="px-4 py-2.5 text-slate-600 max-w-[120px] truncate">{item.candidateName ?? '—'}</td>
               <td className="px-4 py-2.5 text-slate-600 max-w-[140px] truncate">{item.jobTitle ?? '—'}</td>
               <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">{item.recruiterName}</td>
-              <td className="px-4 py-2.5"><StatusBadge status={item.status} /></td>
+              <td className="px-4 py-2.5"><StatusLabel status={item.status} /></td>
               <td className="px-4 py-2.5">
                 <button
                   onClick={() => onView(item)}
@@ -538,84 +515,74 @@ export default function ActivityLogPage() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* ── Page Header ─────────────────────────────────────────────────── */}
-        <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-bold text-slate-900">Activity Logs</h1>
-              <p className="text-xs text-slate-400 mt-0.5">Track recruiter activities across clients, jobs and candidates</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={exportCSV}
-                className="flex items-center gap-1.5 text-sm font-medium text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>download</span>
-                Export CSV
-              </button>
-              <button onClick={() => setShowModal(true)}
-                className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>add</span>
-                Log Activity
-              </button>
-            </div>
+        <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
+          <h1 className="text-[15px] font-bold text-slate-900">Activity Logs</h1>
+          <div className="flex items-center gap-2">
+            <button onClick={exportCSV}
+              className="flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
+              Export CSV
+            </button>
+            <button onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
+              Log Activity
+            </button>
           </div>
         </div>
 
         {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-        <div className="bg-white border-b border-slate-100 px-6 py-3 flex items-center gap-3 flex-wrap flex-shrink-0">
-          {/* Search */}
-          <div className="relative min-w-[220px]">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '15px' }}>search</span>
+        <div className="bg-white border-b border-slate-100 px-6 py-2.5 flex items-center gap-2 flex-shrink-0">
+          {/* Search — wide */}
+          <div className="relative flex-1 min-w-0 max-w-sm">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '14px' }}>search</span>
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by client, candidate, keyword…"
+              placeholder="Search activities…"
               className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
           </div>
 
-          {/* Type */}
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as ActivityType | '')}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-            <option value="">All Types</option>
+            className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">Type</option>
             {ALL_TYPES.map((t) => <option key={t} value={t}>{ACTIVITY_EMOJI[t]} {ACTIVITY_LABELS[t]}</option>)}
           </select>
 
-          {/* Client */}
           <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-            <option value="">All Clients</option>
+            className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">Client</option>
             {clients.map((c) => <option key={c.id} value={c.id}>{c.companyName}</option>)}
           </select>
 
-          {/* Recruiter */}
           <select value={recruiterFilter} onChange={(e) => setRecruiterFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-            <option value="">All Recruiters</option>
+            className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">Recruiter</option>
             {ALL_RECRUITERS.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
 
-          {/* Status */}
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as ActivityStatus | '')}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-            <option value="">All Statuses</option>
-            {ALL_STATUSES.map((s) => <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+            className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">Status</option>
+            {ALL_STATUSES.map((s) => <option key={s} value={s}>{STATUS_DOT[s]} {STATUS_LABEL_TEXT[s]}</option>)}
           </select>
 
           {hasFilters && (
-            <button onClick={clearFilters} className="text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+            <button onClick={clearFilters} className="text-xs font-semibold text-slate-400 hover:text-danger flex items-center gap-1 transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>close</span>
               Clear
             </button>
           )}
 
-          {/* Count + View Toggle */}
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-xs text-slate-400 font-medium">{filtered.length} activities</span>
+          <div className="ml-auto flex items-center gap-3 flex-shrink-0">
+            <span className="text-xs text-slate-400">{filtered.length} activities</span>
             <div className="flex bg-slate-100 rounded-lg p-0.5">
               <button onClick={() => setViewMode('feed')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${viewMode === 'feed' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>view_agenda</span>
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${viewMode === 'feed' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>view_agenda</span>
                 Feed
               </button>
               <button onClick={() => setViewMode('table')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${viewMode === 'table' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
-                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>table_rows</span>
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${viewMode === 'table' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>table_rows</span>
                 Table
               </button>
             </div>
@@ -627,7 +594,7 @@ export default function ActivityLogPage() {
           {filtered.length === 0 ? (
             <EmptyState onClear={clearFilters} />
           ) : viewMode === 'feed' ? (
-            <div className="max-w-3xl mx-auto bg-white my-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white border-b border-slate-100">
               {groups.map(([key, items]) => (
                 <div key={key}>
                   <DateSeparator label={dateLabel(items[0].timestamp)} count={items.length} />
@@ -638,7 +605,7 @@ export default function ActivityLogPage() {
               ))}
             </div>
           ) : (
-            <div className="bg-white my-4 mx-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white">
               <TableView items={filtered} onView={setDrawerItem} />
             </div>
           )}

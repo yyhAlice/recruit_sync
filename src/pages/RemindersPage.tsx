@@ -3,7 +3,7 @@ import { ChevronDown, ChevronRight, MoreHorizontal, X, Check, Plus } from 'lucid
 import Sidebar from '../components/Sidebar'
 import {
   initialReminders, PRIORITY_ORDER,
-  type Reminder, type Priority, type ReminderStatus, type RelatedType,
+  type Reminder, type Priority, type RelatedType,
 } from '../data/remindersMockData'
 import { clients, jobs, candidates, recruiters } from '../data/mockData'
 
@@ -14,16 +14,6 @@ const LS_KEY = 'rs_reminders'
 type TabKey = 'all' | 'overdue' | 'today' | 'upcoming' | 'completed'
 type SortKey = 'dueAsc' | 'dueDesc' | 'priority' | 'createdAt'
 
-const PRIORITY_DOT: Record<Priority, string> = {
-  high:   'bg-red-500',
-  medium: 'bg-amber-400',
-  low:    'bg-slate-300',
-}
-const PRIORITY_TEXT: Record<Priority, string> = {
-  high:   'text-red-600',
-  medium: 'text-amber-600',
-  low:    'text-slate-400',
-}
 
 // ── localStorage ─────────────────────────────────────────────────────────────────
 function loadReminders(): Reminder[] {
@@ -70,11 +60,12 @@ function fmtDate(iso: string) {
 
 // ── Sub-components ────────────────────────────────────────────────────────────────
 
+const PRIORITY_EMOJI: Record<Priority, string> = { high: '🔴', medium: '🟡', low: '⚪' }
+
 function PriorityIndicator({ priority }: { priority: Priority }) {
   return (
-    <span className={`flex items-center gap-1 text-[10px] font-semibold ${PRIORITY_TEXT[priority]}`}>
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[priority]}`} />
-      {priority.charAt(0).toUpperCase() + priority.slice(1)}
+    <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
+      {PRIORITY_EMOJI[priority]} {priority.charAt(0).toUpperCase() + priority.slice(1)}
     </span>
   )
 }
@@ -149,46 +140,41 @@ function ReminderRow({
   const completed = reminder.status === 'completed'
 
   const borderCls =
-    sec === 'overdue' ? 'border-l-[3px] border-l-red-400' :
-    sec === 'today'   ? 'border-l-[3px] border-l-amber-400' :
-    'border-l-[3px] border-l-transparent'
+    sec === 'overdue' ? 'border-l-2 border-l-red-400' :
+    sec === 'today'   ? 'border-l-2 border-l-amber-400' :
+    'border-l-2 border-l-transparent'
 
-  const context = [reminder.jobTitle, reminder.clientName].filter(Boolean).join(' · ')
+  const context = [reminder.jobTitle, reminder.clientName, reminder.candidateName].filter(Boolean).join(' · ')
 
   return (
-    <div className={`group flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 ${borderCls} ${completed ? 'opacity-60' : ''}`}>
+    <div className={`group flex items-center gap-3 px-4 py-2 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 ${borderCls} ${completed ? 'opacity-50' : ''}`}>
       {/* Checkbox */}
       <button
         onClick={(e) => { e.stopPropagation(); onCheck() }}
-        className={`flex-shrink-0 mt-0.5 w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${completed ? 'bg-slate-200 border-slate-300' : 'border-slate-300 hover:border-primary'}`}
+        className={`flex-shrink-0 w-3.5 h-3.5 rounded border-2 flex items-center justify-center transition-colors ${completed ? 'bg-slate-200 border-slate-300' : 'border-slate-300 hover:border-primary'}`}
       >
-        {completed && <Check size={9} className="text-slate-500" strokeWidth={3} />}
+        {completed && <Check size={8} className="text-slate-500" strokeWidth={3} />}
       </button>
 
       {/* Content */}
       <div className="flex-1 min-w-0 cursor-pointer" onClick={onView}>
-        <p className={`text-sm font-medium text-slate-800 leading-snug ${completed ? 'line-through text-slate-400' : ''}`}>
+        <p className={`text-[13px] font-medium text-slate-800 leading-snug truncate ${completed ? 'line-through text-slate-400' : ''}`}>
           {reminder.title}
         </p>
-        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-          {context && <span className="text-[11px] text-slate-400">{context}</span>}
-          {reminder.candidateName && (
-            <span className="text-[11px] text-slate-400">{context ? '·' : ''} {reminder.candidateName}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 mt-1">
-          {completed && reminder.completedAt ? (
-            <span className="text-[11px] text-slate-400">Completed {fmtDate(reminder.completedAt)}{reminder.completedBy ? ` by ${reminder.completedBy}` : ''}</span>
-          ) : (
-            <DueDateLabel reminder={reminder} />
-          )}
-        </div>
+        {context && (
+          <p className="text-[11px] text-slate-400 truncate mt-0.5">{context}</p>
+        )}
       </div>
 
-      {/* Right meta */}
-      <div className="flex items-center gap-3 flex-shrink-0 mt-0.5">
+      {/* Right meta — all inline */}
+      <div className="flex items-center gap-4 flex-shrink-0">
+        {completed && reminder.completedAt ? (
+          <span className="text-[11px] text-slate-400">Done {fmtDate(reminder.completedAt)}</span>
+        ) : (
+          <DueDateLabel reminder={reminder} />
+        )}
         <PriorityIndicator priority={reminder.priority} />
-        <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap hidden sm:block">{reminder.assignedRecruiter}</span>
+        <span className="text-[11px] text-slate-400 whitespace-nowrap w-20 text-right hidden lg:block">{reminder.assignedRecruiter}</span>
         <MoreMenu
           onView={onView} onEdit={onEdit} onReschedule={onReschedule}
           onComplete={onCheck} onDuplicate={onDuplicate} onDelete={onDelete}
@@ -227,34 +213,30 @@ function ReminderSection({
   if (!meta || reminders.length === 0) return null
 
   return (
-    <div className="mb-2">
+    <div>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-4 py-2 text-left hover:bg-slate-50 transition-colors group"
+        className="w-full flex items-center gap-2 px-4 py-1.5 text-left bg-slate-50 border-b border-t border-slate-100 sticky top-0 z-10 hover:bg-slate-100 transition-colors"
       >
-        {open ? <ChevronDown size={13} className="text-slate-400" /> : <ChevronRight size={13} className="text-slate-400" />}
-        <span className={`text-[11px] font-bold uppercase tracking-widest ${sectionKey === 'overdue' ? 'text-red-500' : sectionKey === 'today' ? 'text-amber-600' : 'text-slate-400'}`}>
+        {open ? <ChevronDown size={11} className="text-slate-400" /> : <ChevronRight size={11} className="text-slate-400" />}
+        <span className={`text-[10px] font-bold uppercase tracking-widest ${sectionKey === 'overdue' ? 'text-red-500' : sectionKey === 'today' ? 'text-amber-600' : 'text-slate-400'}`}>
           {meta.label}
         </span>
-        <span className="text-[10px] font-semibold text-slate-300 bg-slate-100 px-1.5 py-0.5 rounded-full">{reminders.length}</span>
+        <span className="text-[10px] font-semibold text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded-full tabular-nums">{reminders.length}</span>
       </button>
 
-      {open && (
-        <div className="bg-white rounded-lg border border-slate-100 mx-0 overflow-hidden">
-          {reminders.map((r) => (
-            <ReminderRow
-              key={r.id}
-              reminder={r}
-              onCheck={() => onCheck(r.id)}
-              onView={() => onView(r)}
-              onEdit={() => onEdit(r)}
-              onReschedule={() => onReschedule(r)}
-              onDuplicate={() => onDuplicate(r)}
-              onDelete={() => onDelete(r.id)}
-            />
-          ))}
-        </div>
-      )}
+      {open && reminders.map((r) => (
+        <ReminderRow
+          key={r.id}
+          reminder={r}
+          onCheck={() => onCheck(r.id)}
+          onView={() => onView(r)}
+          onEdit={() => onEdit(r)}
+          onReschedule={() => onReschedule(r)}
+          onDuplicate={() => onDuplicate(r)}
+          onDelete={() => onDelete(r.id)}
+        />
+      ))}
     </div>
   )
 }
@@ -512,8 +494,8 @@ function ReminderModal({ initial, onClose, onSave }: {
               <div className="flex gap-1.5">
                 {(['high', 'medium', 'low'] as Priority[]).map((p) => (
                   <button key={p} type="button" onClick={() => set('priority', p)}
-                    className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors capitalize ${form.priority === p ? `border-current ${PRIORITY_TEXT[p]} bg-slate-50` : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${PRIORITY_DOT[p]}`} />{p}
+                    className={`flex-1 flex items-center justify-center gap-1 py-2 rounded-lg text-[11px] font-semibold border transition-colors capitalize ${form.priority === p ? 'border-current bg-slate-50 text-slate-700' : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                    {PRIORITY_EMOJI[p]} {p}
                   </button>
                 ))}
               </div>
@@ -684,51 +666,49 @@ export default function RemindersPage() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
-          <div>
-            <h1 className="text-lg font-bold text-slate-900">Reminders</h1>
-            <p className="text-xs text-slate-400 mt-0.5">Follow-up reminders across clients, jobs and candidates</p>
-          </div>
+        <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
+          <h1 className="text-[15px] font-bold text-slate-900">Reminders</h1>
           <button onClick={() => setModal('new')}
-            className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
-            <Plus size={14} strokeWidth={2.5} />
+            className="flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
+            <Plus size={13} strokeWidth={2.5} />
             Add Reminder
           </button>
         </div>
 
         {/* ── Toolbar ─────────────────────────────────────────────────────── */}
-        <div className="bg-white border-b border-slate-100 px-6 py-3 flex-shrink-0">
-          {/* Tabs */}
-          <div className="flex items-center gap-1 mb-3 flex-wrap">
+        <div className="bg-white border-b border-slate-100 px-6 py-2.5 flex-shrink-0">
+          {/* Tabs + count */}
+          <div className="flex items-center gap-1 mb-2.5">
             {tabs.map(({ key, label, count }) => (
               <button key={key} onClick={() => setTab(key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${tab === key ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'}`}>
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${tab === key ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100'}`}>
                 {label}
                 <span className={`text-[10px] px-1 py-0.5 rounded-full font-bold ${tab === key ? 'bg-white/20 text-white' : key === 'overdue' && count > 0 ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-400'}`}>
                   {count}
                 </span>
               </button>
             ))}
+            <span className="ml-auto text-xs text-slate-400">{filtered.length} reminders</span>
           </div>
 
           {/* Search + filters */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="relative">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0 max-w-sm">
               <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '14px' }}>search</span>
               <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search reminders…"
-                className="pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 w-52 bg-white" />
+                className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
             </div>
 
             <select value={recruiterF} onChange={(e) => setRecruiterF(e.target.value)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-              <option value="">All Recruiters</option>
+              className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+              <option value="">Recruiter</option>
               {allRecruiters.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
 
             <select value={typeF} onChange={(e) => setTypeF(e.target.value as RelatedType | '')}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-              <option value="">All Types</option>
+              className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+              <option value="">Type</option>
               <option value="client">Client</option>
               <option value="job">Job</option>
               <option value="candidate">Candidate</option>
@@ -736,46 +716,44 @@ export default function RemindersPage() {
             </select>
 
             <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-              <option value="dueAsc">Due: Soonest first</option>
-              <option value="dueDesc">Due: Latest first</option>
+              className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+              <option value="dueAsc">Soonest</option>
+              <option value="dueDesc">Latest</option>
               <option value="priority">Priority</option>
-              <option value="createdAt">Recently created</option>
+              <option value="createdAt">Recent</option>
             </select>
 
             {hasFilters && (
               <button onClick={() => { setSearch(''); setRecruiterF(''); setTypeF('') }}
-                className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-slate-600 transition-colors">
-                <X size={12} />Clear
+                className="flex items-center gap-1 text-xs font-semibold text-slate-400 hover:text-danger transition-colors">
+                <X size={11} />Clear
               </button>
             )}
-
-            <span className="ml-auto text-xs text-slate-400 font-medium">{filtered.length} reminders</span>
           </div>
         </div>
 
         {/* ── Content ─────────────────────────────────────────────────────── */}
-        <div className="flex-1 overflow-y-auto py-4 px-6">
+        <div className="flex-1 overflow-y-auto bg-white">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4 text-2xl">🔔</div>
+              <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mb-3 text-xl">🔔</div>
               <p className="text-sm font-semibold text-slate-600 mb-1">No reminders found</p>
-              <p className="text-xs text-slate-400 mb-4">Try changing your filters or create a new reminder</p>
+              <p className="text-xs text-slate-400 mb-4">Try adjusting filters or add a new reminder</p>
               <div className="flex gap-2">
                 {hasFilters && (
                   <button onClick={() => { setSearch(''); setRecruiterF(''); setTypeF(''); setTab('all') }}
-                    className="text-sm font-semibold text-slate-500 border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
+                    className="text-xs font-semibold text-slate-500 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
                     Clear Filters
                   </button>
                 )}
                 <button onClick={() => setModal('new')}
-                  className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">
-                  <Plus size={13} />Add Reminder
+                  className="flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
+                  <Plus size={12} />Add Reminder
                 </button>
               </div>
             </div>
           ) : (
-            <div className="max-w-3xl mx-auto">
+            <div>
               {SECTION_ORDER.map((sec) => (
                 <ReminderSection
                   key={sec}
