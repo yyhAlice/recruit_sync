@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import PageHeader from '../components/PageHeader'
 import StatusDot from '../components/StatusDot'
-import { clients, getActiveJobsCount } from '../data/mockData'
+import { clients as baseClients, getActiveJobsCount } from '../data/mockData'
+import type { Client } from '../types'
+import { TODAY } from '../utils/format'
 
 const industryBadge: Record<string, string> = {
   Technology: 'bg-blue-100 text-blue-700',
@@ -13,20 +15,115 @@ const industryBadge: Record<string, string> = {
 }
 
 function daysAgo(dateStr: string): string {
-  const ref = new Date('2026-07-01')
+  const ref = new Date(TODAY)
   const d = new Date(dateStr)
   const days = Math.floor((ref.getTime() - d.getTime()) / (1000 * 60 * 60 * 24))
-  if (days === 0) return 'Today'
+  if (days <= 0) return 'Today'
   if (days === 1) return 'Yesterday'
   return `${days} days ago`
 }
 
-const industries = ['All Industries', 'Technology', 'Finance', 'Manufacturing', 'Trading']
+const INDUSTRY_OPTIONS = ['Technology', 'Finance', 'Manufacturing', 'Trading']
+const industries = ['All Industries', ...INDUSTRY_OPTIONS]
+
+const BLANK_CLIENT = {
+  companyName: '', contactPerson: '', email: '', phone: '',
+  industry: 'Technology', address: '', website: '', notes: '',
+}
+
+function AddClientModal({ onClose, onAdd }: { onClose: () => void; onAdd: (c: Client) => void }) {
+  const [form, setForm] = useState(BLANK_CLIENT)
+  const [error, setError] = useState('')
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (e.target === overlayRef.current) onClose()
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  function submit() {
+    if (!form.companyName.trim()) { setError('Company name is required'); return }
+    if (!form.contactPerson.trim()) { setError('Contact person is required'); return }
+    const newClient: Client = {
+      id: `client-new-${Date.now()}`,
+      lastContactDate: TODAY,
+      ...form,
+    }
+    onAdd(newClient)
+    onClose()
+  }
+
+  const set = (k: keyof typeof BLANK_CLIENT) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  return (
+    <div ref={overlayRef} className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h2 className="text-sm font-bold text-slate-800">Add Client</h2>
+          <button onClick={onClose} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100">
+            <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '16px' }}>close</span>
+          </button>
+        </div>
+        <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto">
+          {error && <p className="text-xs text-red-500 font-medium bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Company Name *</label>
+              <input value={form.companyName} onChange={set('companyName')} placeholder="Acme Corp" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Contact Person *</label>
+              <input value={form.contactPerson} onChange={set('contactPerson')} placeholder="Taro Yamamoto" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Industry</label>
+              <select value={form.industry} onChange={set('industry')} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {INDUSTRY_OPTIONS.map((i) => <option key={i}>{i}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Email</label>
+              <input value={form.email} onChange={set('email')} type="email" placeholder="contact@acme.jp" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Phone</label>
+              <input value={form.phone} onChange={set('phone')} placeholder="+81-3-0000-0000" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Website</label>
+              <input value={form.website} onChange={set('website')} placeholder="https://acme.jp" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Address</label>
+              <input value={form.address} onChange={set('address')} placeholder="Shibuya, Tokyo" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Notes</label>
+              <textarea value={form.notes} onChange={set('notes')} rows={2} placeholder="Any relevant notes..." className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100 bg-slate-50">
+          <button onClick={onClose} className="text-sm font-medium text-slate-500 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
+          <button onClick={submit} className="text-sm font-semibold text-white bg-primary px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">Add Client</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ClientListPage() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [industry, setIndustry] = useState('All Industries')
+  const [showModal, setShowModal] = useState(false)
+  const [localClients, setLocalClients] = useState<Client[]>([])
+
+  const clients = [...baseClients, ...localClients]
 
   const filtered = clients.filter((c) => {
     const matchSearch =
@@ -37,6 +134,7 @@ export default function ClientListPage() {
   })
 
   return (
+    <>
     <div className="flex h-screen bg-surface overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -45,10 +143,10 @@ export default function ClientListPage() {
           breadcrumbs={[]}
           actions={
             <button
-              disabled
-              className="flex items-center gap-1.5 bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg opacity-60 cursor-not-allowed"
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-dark transition-colors"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>add</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>add</span>
               Add Client
             </button>
           }
@@ -148,5 +246,12 @@ export default function ClientListPage() {
         </div>
       </div>
     </div>
+    {showModal && (
+      <AddClientModal
+        onClose={() => setShowModal(false)}
+        onAdd={(c) => setLocalClients((prev) => [c, ...prev])}
+      />
+    )}
+  </>
   )
 }

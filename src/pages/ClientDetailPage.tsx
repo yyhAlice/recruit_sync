@@ -10,6 +10,8 @@ import {
   getActivityLogsByTargetId,
   getActiveJobsCount,
 } from '../data/mockData'
+import { initialReminders } from '../data/remindersMockData'
+import { TODAY } from '../utils/format'
 
 type Tab = 'jobs' | 'activity' | 'files' | 'reminders'
 
@@ -72,11 +74,15 @@ export default function ClientDetailPage() {
   const totalCandidates = jobs.reduce((sum, job) => sum + getCandidatesByJobId(job.id).length, 0)
   const ytdPlacements = jobs.reduce((sum, job) => sum + getCandidatesByJobId(job.id).filter(c => c.stage === 'placed').length, 0)
 
+  const clientReminders = initialReminders.filter((r) => r.clientId === client.id)
+  const openClientReminders  = clientReminders.filter((r) => r.status === 'open')
+  const doneClientReminders  = clientReminders.filter((r) => r.status === 'completed')
+
   const tabs: { id: Tab; label: string }[] = [
     { id: 'jobs', label: 'Jobs' },
     { id: 'activity', label: 'Activity Logs' },
     { id: 'files', label: 'Files' },
-    { id: 'reminders', label: 'Reminders' },
+    { id: 'reminders', label: `Reminders${openClientReminders.length ? ` (${openClientReminders.length})` : ''}` },
   ]
 
   return (
@@ -167,7 +173,7 @@ export default function ClientDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">Open Reminders</span>
-                  <span className="text-sm font-semibold text-warning">2</span>
+                  <span className={`text-sm font-semibold ${openClientReminders.length > 0 ? 'text-warning' : 'text-success'}`}>{openClientReminders.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-slate-500">YTD Placements</span>
@@ -294,25 +300,47 @@ export default function ClientDetailPage() {
               {/* Reminders tab */}
               {activeTab === 'reminders' && (
                 <div className="space-y-2">
-                  {[
-                    { text: 'Submit shortlist for Senior Java Engineer', priority: 'High', due: '2026-07-03' },
-                    { text: 'Schedule Q3 planning call', priority: 'Medium', due: '2026-07-10' },
-                  ].map((reminder, i) => (
-                    <div key={i} className="flex items-center justify-between bg-slate-50 rounded-lg border border-slate-200 px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${reminder.priority === 'High' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {reminder.priority}
-                        </span>
-                        <div>
-                          <div className="text-sm text-slate-700">{reminder.text}</div>
-                          <div className="text-xs text-slate-400">Due {formatDate(reminder.due)}</div>
-                        </div>
-                      </div>
-                      <button className="text-xs font-medium text-success bg-success/10 hover:bg-success/20 px-3 py-1.5 rounded-lg transition-colors">
-                        Done
-                      </button>
+                  {clientReminders.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <span className="material-symbols-outlined text-3xl text-slate-200 mb-2">notifications_off</span>
+                      <p className="text-sm text-slate-400">No reminders for this client</p>
                     </div>
-                  ))}
+                  ) : (
+                    <>
+                      {openClientReminders.map((r) => {
+                        const isOverdue = r.dueDate < TODAY
+                        return (
+                          <div key={r.id} className={`flex items-center justify-between rounded-lg border px-4 py-3 ${isOverdue ? 'bg-red-50 border-red-100' : 'bg-slate-50 border-slate-200'}`}>
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className={`flex-shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${r.priority === 'high' ? 'text-red-600 bg-red-100' : r.priority === 'medium' ? 'text-amber-600 bg-amber-100' : 'text-slate-500 bg-slate-100'}`}>
+                                {r.priority}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="text-sm text-slate-700 font-medium truncate">{r.title}</p>
+                                <p className={`text-xs mt-0.5 ${isOverdue ? 'text-red-500 font-semibold' : 'text-slate-400'}`}>
+                                  Due {formatDate(r.dueDate)}{isOverdue ? ' · Overdue' : ''}
+                                </p>
+                              </div>
+                            </div>
+                            <button onClick={() => navigate('/reminders')} className="flex-shrink-0 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors ml-3">
+                              View
+                            </button>
+                          </div>
+                        )
+                      })}
+                      {doneClientReminders.length > 0 && (
+                        <div className="pt-2">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Completed ({doneClientReminders.length})</p>
+                          {doneClientReminders.map((r) => (
+                            <div key={r.id} className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-100 mb-1.5 opacity-60">
+                              <span className="material-symbols-outlined text-success" style={{ fontSize: '14px' }}>check_circle</span>
+                              <p className="text-xs text-slate-400 line-through">{r.title}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               )}
             </div>

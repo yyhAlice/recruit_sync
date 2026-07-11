@@ -1,10 +1,12 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import PageHeader from '../components/PageHeader'
-import { jobs, clients, candidates } from '../data/mockData'
+import { jobs as baseJobs, clients, candidates } from '../data/mockData'
+import type { Job, EmploymentType } from '../types'
+import { TODAY as TODAY_STR } from '../utils/format'
 
-const TODAY = new Date('2026-07-01')
+const TODAY = new Date(TODAY_STR)
 
 const statusBadge: Record<string, string> = {
   active: 'bg-green-100 text-green-700',
@@ -41,12 +43,141 @@ function daysUntilColor(dateStr: string, status: string): string {
 }
 
 const allClients = ['All Clients', ...clients.map((c) => c.companyName)]
-const allLocations = ['All Locations', ...Array.from(new Set(jobs.map((j) => j.location)))]
+const allLocations = ['All Locations', ...Array.from(new Set<string>(baseJobs.map((j) => j.location)))]
 const allStatuses = ['All Status', 'active', 'on-hold', 'closed']
+
+const EMPLOYMENT_TYPES: EmploymentType[] = ['Full-time', 'Contract', 'Part-time']
+const JAPANESE_LEVELS = ['Native', 'Business', 'Conversational', 'Basic', 'None']
+const ENGLISH_LEVELS  = ['Native', 'Business', 'Conversational', 'Basic', 'None']
+
+const BLANK_JOB = {
+  clientId: '', title: '', employmentType: 'Full-time' as EmploymentType,
+  location: 'Tokyo', salaryMin: '6000000', salaryMax: '9000000',
+  experienceYears: '3', japaneseLevel: 'Business', englishLevel: 'Conversational',
+  closingDate: '', notes: '', skills: '',
+}
+
+function AddJobModal({ onClose, onAdd }: { onClose: () => void; onAdd: (j: Job) => void }) {
+  const [form, setForm] = useState(BLANK_JOB)
+  const [error, setError] = useState('')
+  const overlayRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handler(e: MouseEvent) { if (e.target === overlayRef.current) onClose() }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  function submit() {
+    if (!form.clientId) { setError('Please select a client'); return }
+    if (!form.title.trim()) { setError('Job title is required'); return }
+    if (!form.closingDate) { setError('Closing date is required'); return }
+    const newJob: Job = {
+      id: `job-new-${Date.now()}`,
+      clientId: form.clientId,
+      title: form.title,
+      employmentType: form.employmentType,
+      location: form.location,
+      salaryMin: Number(form.salaryMin) || 6000000,
+      salaryMax: Number(form.salaryMax) || 9000000,
+      status: 'active',
+      closingDate: form.closingDate,
+      requiredSkills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
+      experienceYears: Number(form.experienceYears) || 3,
+      japaneseLevel: form.japaneseLevel,
+      englishLevel: form.englishLevel,
+      notes: form.notes,
+    }
+    onAdd(newJob)
+    onClose()
+  }
+
+  const set = (k: keyof typeof BLANK_JOB) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  return (
+    <div ref={overlayRef} className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+          <h2 className="text-sm font-bold text-slate-800">Add Job</h2>
+          <button onClick={onClose} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100">
+            <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '16px' }}>close</span>
+          </button>
+        </div>
+        <div className="p-5 space-y-3 max-h-[72vh] overflow-y-auto">
+          {error && <p className="text-xs text-red-500 font-medium bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Client *</label>
+              <select value={form.clientId} onChange={set('clientId')} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option value="">Select client…</option>
+                {clients.map((c) => <option key={c.id} value={c.id}>{c.companyName}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Job Title *</label>
+              <input value={form.title} onChange={set('title')} placeholder="Software Engineer" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Employment Type</label>
+              <select value={form.employmentType} onChange={set('employmentType')} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {EMPLOYMENT_TYPES.map((t) => <option key={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Location</label>
+              <input value={form.location} onChange={set('location')} placeholder="Tokyo" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Salary Min (¥)</label>
+              <input value={form.salaryMin} onChange={set('salaryMin')} type="number" placeholder="6000000" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Salary Max (¥)</label>
+              <input value={form.salaryMax} onChange={set('salaryMax')} type="number" placeholder="9000000" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Experience (years)</label>
+              <input value={form.experienceYears} onChange={set('experienceYears')} type="number" min="0" max="20" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Closing Date *</label>
+              <input value={form.closingDate} onChange={set('closingDate')} type="date" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Japanese Level</label>
+              <select value={form.japaneseLevel} onChange={set('japaneseLevel')} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {JAPANESE_LEVELS.map((l) => <option key={l}>{l}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">English Level</label>
+              <select value={form.englishLevel} onChange={set('englishLevel')} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {ENGLISH_LEVELS.map((l) => <option key={l}>{l}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Required Skills (comma-separated)</label>
+              <input value={form.skills} onChange={set('skills')} placeholder="React, TypeScript, Node.js" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Notes</label>
+              <textarea value={form.notes} onChange={set('notes')} rows={2} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 resize-none" />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100 bg-slate-50">
+          <button onClick={onClose} className="text-sm font-medium text-slate-500 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
+          <button onClick={submit} className="text-sm font-semibold text-white bg-primary px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">Add Job</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Pre-compute candidate counts per job
 const candidateCountByJob = Object.fromEntries(
-  jobs.map((j) => {
+  baseJobs.map((j) => {
     const all = candidates.filter((c) => c.jobId === j.id)
     const active = all.filter((c) => c.stage !== 'rejected' && c.stage !== 'placed').length
     return [j.id, { total: all.length, active }]
@@ -59,6 +190,10 @@ export default function JobListPage() {
   const [statusFilter, setStatusFilter] = useState('All Status')
   const [clientFilter, setClientFilter] = useState('All Clients')
   const [locationFilter, setLocationFilter] = useState('All Locations')
+  const [showModal, setShowModal] = useState(false)
+  const [localJobs, setLocalJobs] = useState<Job[]>([])
+
+  const jobs = useMemo(() => [...baseJobs, ...localJobs], [localJobs])
 
   const filtered = useMemo(() => {
     return jobs.filter((j) => {
@@ -79,6 +214,7 @@ export default function JobListPage() {
   const totalClosed = jobs.filter((j) => j.status === 'closed').length
 
   return (
+    <>
     <div className="flex h-screen bg-surface overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -88,10 +224,10 @@ export default function JobListPage() {
           breadcrumbs={[]}
           actions={
             <button
-              disabled
-              className="flex items-center gap-1.5 bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg opacity-60 cursor-not-allowed"
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-dark transition-colors"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>add</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>add</span>
               Add Job
             </button>
           }
@@ -300,6 +436,13 @@ export default function JobListPage() {
         </div>
       </div>
     </div>
+    {showModal && (
+      <AddJobModal
+        onClose={() => setShowModal(false)}
+        onAdd={(j) => setLocalJobs((prev) => [j, ...prev])}
+      />
+    )}
+  </>
   )
 }
 
