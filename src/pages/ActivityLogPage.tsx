@@ -1,168 +1,660 @@
-import { useState, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Sidebar from '../components/Sidebar'
-import PageHeader from '../components/PageHeader'
-import { activityLogs, clients, jobs } from '../data/mockData'
+import {
+  initialActivities,
+  ACTIVITY_LABELS, ACTIVITY_EMOJI, ACTIVITY_COLORS, STATUS_COLORS,
+  type Activity, type ActivityType, type ActivityStatus,
+} from '../data/activityMockData'
+import { clients, jobs, candidates, recruiters } from '../data/mockData'
 
-const typeBadge: Record<string, string> = {
-  Call:    'bg-blue-100 text-blue-700',
-  Email:   'bg-purple-100 text-purple-700',
-  Meeting: 'bg-teal-100 text-teal-700',
-  Chat:    'bg-amber-100 text-amber-700',
+const LS_KEY = 'rs_activities_local'
+
+function loadLocal(): Activity[] {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) ?? '[]') } catch { return [] }
+}
+function saveLocal(items: Activity[]) {
+  localStorage.setItem(LS_KEY, JSON.stringify(items))
 }
 
-const typeIcon: Record<string, string> = {
-  Call: 'phone', Email: 'mail', Meeting: 'groups', Chat: 'chat',
-}
-
-function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
-}
-
-function daysAgo(dateStr: string) {
-  const diff = Math.floor((new Date('2026-07-01').getTime() - new Date(dateStr).getTime()) / 86400000)
-  if (diff <= 0) return 'Today'
+function dateLabel(ts: string): string {
+  const d = new Date(ts)
+  const today = new Date('2026-07-11')
+  const diff = Math.floor((today.getTime() - d.setHours(0,0,0,0)) / 86400000)
+  if (diff === 0) return 'Today'
   if (diff === 1) return 'Yesterday'
-  return `${diff} days ago`
+  if (diff < 7)  return d.toLocaleDateString('en-US', { weekday: 'long' })
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
 }
 
-const allTypes = ['All Types', 'Call', 'Email', 'Meeting', 'Chat']
-const allAuthors = ['All', ...Array.from(new Set(activityLogs.map((l) => l.author)))]
+function groupKey(ts: string) { return ts.slice(0, 10) }
 
-// Enrich logs with target name and navigation
-const enriched = activityLogs
-  .map((log) => {
-    const client = clients.find((c) => c.id === log.targetId)
-    const job    = jobs.find((j) => j.id === log.targetId)
-    const target = client ?? job
-    const isClient = !!client
-    return { ...log, targetName: target ? (isClient ? client!.companyName : job!.title) : log.targetId, isClient, targetNav: isClient ? `/clients/${log.targetId}` : `/jobs/${log.targetId}` }
-  })
-  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+function fmtTime(ts: string) {
+  return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+}
 
-export default function ActivityLogPage() {
-  const navigate = useNavigate()
-  const [typeFilter, setTypeFilter]     = useState('All Types')
-  const [authorFilter, setAuthorFilter] = useState('All')
-  const [search, setSearch]             = useState('')
+// ── Status Badge ────────────────────────────────────────────────────────────────
+function StatusBadge({ status }: { status: ActivityStatus }) {
+  const labels: Record<ActivityStatus, string> = {
+    completed: 'Completed', pending: 'Pending', cancelled: 'Cancelled', info: 'Info',
+  }
+  return (
+    <span className={`inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[status]}`}>
+      {labels[status]}
+    </span>
+  )
+}
 
-  const filtered = useMemo(() => enriched.filter((l) => {
-    const q = search.toLowerCase()
-    const matchSearch = l.summary.toLowerCase().includes(q) || l.targetName.toLowerCase().includes(q)
-    const matchType   = typeFilter === 'All Types' || l.type === typeFilter
-    const matchAuthor = authorFilter === 'All' || l.author === authorFilter
-    return matchSearch && matchType && matchAuthor
-  }), [typeFilter, authorFilter, search])
+// ── Type Chip ───────────────────────────────────────────────────────────────────
+function TypeChip({ type }: { type: ActivityType }) {
+  return (
+    <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${ACTIVITY_COLORS[type]}`}>
+      <span>{ACTIVITY_EMOJI[type]}</span>
+      {ACTIVITY_LABELS[type]}
+    </span>
+  )
+}
 
-  // Group by date
-  const groups = useMemo(() => {
-    const map = new Map<string, typeof filtered>()
-    filtered.forEach((l) => {
-      const g = map.get(l.date) ?? []
-      g.push(l)
-      map.set(l.date, g)
-    })
-    return Array.from(map.entries()).sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
-  }, [filtered])
+// ── Activity Drawer ──────────────────────────────────────────────────────────────
+function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    function h(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [onClose])
 
   return (
-    <div className="flex h-screen bg-surface overflow-hidden">
-      <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <PageHeader
-          title="Activity Logs"
-          subtitle={`${activityLogs.length} activities recorded`}
-          actions={
-            <button disabled className="flex items-center gap-1.5 bg-primary text-white text-sm font-medium px-4 py-2 rounded-lg opacity-60 cursor-not-allowed">
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>add</span>
-              Log Activity
-            </button>
-          }
-        />
-
-        {/* Filter bar */}
-        <div className="flex items-center gap-3 px-6 py-3 bg-white border-b border-slate-200">
-          <div className="relative flex-1 max-w-xs">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '16px' }}>search</span>
-            <input type="text" placeholder="Search activities..." value={search} onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary" />
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/20" />
+      <div ref={ref} className="relative w-[420px] bg-white h-full shadow-2xl flex flex-col overflow-hidden">
+        {/* Header */}
+        <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${ACTIVITY_COLORS[item.type]}`}>
+              {ACTIVITY_EMOJI[item.type]}
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-slate-800 leading-tight truncate">{item.title}</p>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {new Date(item.timestamp).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })} · {fmtTime(item.timestamp)}
+              </p>
+            </div>
           </div>
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30">
-            {allTypes.map((t) => <option key={t}>{t}</option>)}
-          </select>
-          <select value={authorFilter} onChange={(e) => setAuthorFilter(e.target.value)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30">
-            {allAuthors.map((a) => <option key={a}>{a}</option>)}
-          </select>
-
-          {/* Type chips */}
-          <div className="flex gap-1 ml-auto">
-            {Object.entries(typeBadge).map(([type, cls]) => (
-              <span key={type} className={`text-xs font-medium px-2 py-0.5 rounded-full ${cls}`}>
-                {activityLogs.filter((l) => l.type === type).length} {type}s
-              </span>
-            ))}
-          </div>
+          <button onClick={onClose} className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors ml-2">
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+          </button>
         </div>
 
-        {/* Timeline */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {groups.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-48 text-slate-400 text-sm">No activity logs found.</div>
-          ) : (
-            <div className="space-y-8">
-              {groups.map(([date, logs]) => (
-                <div key={date}>
-                  {/* Date separator */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="h-px flex-1 bg-slate-200" />
-                    <span className="text-xs font-semibold text-slate-400 bg-surface px-3 py-1 rounded-full border border-slate-200">
-                      {formatDate(date)} · {daysAgo(date)}
-                    </span>
-                    <div className="h-px flex-1 bg-slate-200" />
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Badges */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <TypeChip type={item.type} />
+            <StatusBadge status={item.status} />
+          </div>
+
+          {/* Entities */}
+          <div className="grid grid-cols-2 gap-3">
+            {item.clientName && (
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Client</p>
+                <p className="text-xs font-semibold text-slate-700">{item.clientName}</p>
+              </div>
+            )}
+            {item.candidateName && (
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Candidate</p>
+                <p className="text-xs font-semibold text-slate-700">{item.candidateName}</p>
+              </div>
+            )}
+            {item.jobTitle && (
+              <div className="bg-slate-50 rounded-lg p-3">
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Job</p>
+                <p className="text-xs font-semibold text-slate-700">{item.jobTitle}</p>
+              </div>
+            )}
+            <div className="bg-slate-50 rounded-lg p-3">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Recruiter</p>
+              <p className="text-xs font-semibold text-slate-700">{item.recruiterName}</p>
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Summary</p>
+            <p className="text-sm text-slate-700 leading-relaxed">{item.summary}</p>
+          </div>
+
+          {/* Notes */}
+          {item.notes && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Notes</p>
+              <p className="text-sm text-slate-600 leading-relaxed bg-slate-50 rounded-lg p-3">{item.notes}</p>
+            </div>
+          )}
+
+          {/* Next Action */}
+          {item.nextAction && (
+            <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
+              <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Next Action</p>
+              <p className="text-sm font-medium text-primary">{item.nextAction}</p>
+            </div>
+          )}
+
+          {/* Attachments */}
+          {item.attachments && item.attachments.length > 0 && (
+            <div>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Attachments</p>
+              <div className="space-y-1.5">
+                {item.attachments.map((a) => (
+                  <div key={a} className="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-lg">
+                    <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '14px' }}>attach_file</span>
+                    <span className="text-xs text-slate-600 font-medium truncate">{a}</span>
                   </div>
-
-                  <div className="space-y-3">
-                    {logs.map((log) => (
-                      <div key={log.id} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 hover:shadow-md transition-shadow">
-                        <div className="flex items-start gap-4">
-                          {/* Icon */}
-                          <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${typeBadge[log.type]}`}>
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{typeIcon[log.type]}</span>
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${typeBadge[log.type]}`}>{log.type}</span>
-                              <button
-                                onClick={() => navigate(log.targetNav)}
-                                className="text-xs font-semibold text-primary hover:underline"
-                              >
-                                {log.targetName}
-                              </button>
-                              <span className="text-xs text-slate-400 ml-auto">{log.author}</span>
-                            </div>
-
-                            <p className="text-sm text-slate-700 leading-relaxed">{log.summary}</p>
-
-                            {log.nextAction && (
-                              <div className="mt-3 flex items-start gap-2 bg-primary/5 rounded-lg px-3 py-2">
-                                <span className="material-symbols-outlined text-primary mt-0.5" style={{ fontSize: '14px' }}>arrow_forward</span>
-                                <p className="text-xs font-medium text-primary">{log.nextAction}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Feed Activity Item ───────────────────────────────────────────────────────────
+function ActivityItem({ item, onView }: { item: Activity; onView: () => void }) {
+  return (
+    <div className="group flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0">
+      {/* Time */}
+      <div className="w-10 flex-shrink-0 pt-0.5">
+        <span className="text-[11px] font-medium text-slate-400 tabular-nums">{fmtTime(item.timestamp)}</span>
+      </div>
+
+      {/* Icon */}
+      <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm ${ACTIVITY_COLORS[item.type]}`}>
+        {ACTIVITY_EMOJI[item.type]}
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start gap-2 mb-1">
+          <p className="text-sm font-semibold text-slate-800 leading-snug flex-1 min-w-0">{item.title}</p>
+          <StatusBadge status={item.status} />
+        </div>
+
+        {/* Entity tags */}
+        <div className="flex items-center gap-2 flex-wrap mb-1.5">
+          {item.clientName && (
+            <span className="text-[11px] text-slate-500">
+              <span className="text-slate-300">Client:</span> {item.clientName}
+            </span>
+          )}
+          {item.candidateName && (
+            <span className="text-[11px] text-slate-500">
+              <span className="text-slate-300">·</span> <span className="text-slate-300">Candidate:</span> {item.candidateName}
+            </span>
+          )}
+          {item.jobTitle && (
+            <span className="text-[11px] text-slate-500">
+              <span className="text-slate-300">·</span> <span className="text-slate-300">Job:</span> {item.jobTitle}
+            </span>
+          )}
+        </div>
+
+        <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{item.summary}</p>
+
+        {item.nextAction && (
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-primary font-medium">
+            <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>arrow_forward</span>
+            {item.nextAction}
+          </div>
+        )}
+      </div>
+
+      {/* Recruiter + Action */}
+      <div className="flex-shrink-0 flex flex-col items-end gap-2">
+        <span className="text-[11px] text-slate-400 font-medium whitespace-nowrap">{item.recruiterName}</span>
+        <button
+          onClick={onView}
+          className="text-[11px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline whitespace-nowrap"
+        >
+          View Details
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Date Separator ───────────────────────────────────────────────────────────────
+function DateSeparator({ label, count }: { label: string; count: number }) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-2 bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
+      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded-full font-medium">{count}</span>
+    </div>
+  )
+}
+
+// ── Table View ───────────────────────────────────────────────────────────────────
+function TableView({ items, onView }: { items: Activity[]; onView: (a: Activity) => void }) {
+  const cols = ['Time', 'Type', 'Client', 'Candidate', 'Job', 'Recruiter', 'Status', '']
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b border-slate-200 bg-slate-50">
+            {cols.map((c) => (
+              <th key={c} className="text-left text-[10px] font-bold text-slate-400 uppercase tracking-wider px-4 py-2.5 whitespace-nowrap">
+                {c}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors group">
+              <td className="px-4 py-2.5 text-slate-400 tabular-nums whitespace-nowrap">
+                <div className="text-[11px]">{fmtTime(item.timestamp)}</div>
+                <div className="text-[10px] text-slate-300">{new Date(item.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</div>
+              </td>
+              <td className="px-4 py-2.5"><TypeChip type={item.type} /></td>
+              <td className="px-4 py-2.5 text-slate-600 max-w-[120px] truncate">{item.clientName ?? '—'}</td>
+              <td className="px-4 py-2.5 text-slate-600 max-w-[120px] truncate">{item.candidateName ?? '—'}</td>
+              <td className="px-4 py-2.5 text-slate-600 max-w-[140px] truncate">{item.jobTitle ?? '—'}</td>
+              <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">{item.recruiterName}</td>
+              <td className="px-4 py-2.5"><StatusBadge status={item.status} /></td>
+              <td className="px-4 py-2.5">
+                <button
+                  onClick={() => onView(item)}
+                  className="text-[11px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
+                >
+                  View
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+// ── Empty State ──────────────────────────────────────────────────────────────────
+function EmptyState({ onClear }: { onClear: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mb-4 text-2xl">🔍</div>
+      <p className="text-sm font-semibold text-slate-600 mb-1">No activities found</p>
+      <p className="text-xs text-slate-400 mb-4">Try adjusting your filters or search terms</p>
+      <button onClick={onClear} className="text-sm font-semibold text-primary hover:underline">Clear Filters</button>
+    </div>
+  )
+}
+
+// ── Log Activity Modal ───────────────────────────────────────────────────────────
+const BLANK_FORM = {
+  type:          'call' as ActivityType,
+  title:         '',
+  clientId:      '',
+  candidateId:   '',
+  jobId:         '',
+  recruiterId:   'r1',
+  summary:       '',
+  nextAction:    '',
+  status:        'completed' as ActivityStatus,
+}
+
+function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activity) => void }) {
+  const [form, setForm] = useState({ ...BLANK_FORM })
+  const [err, setErr] = useState<Record<string, string>>({})
+
+  function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); setErr((e) => { const n = { ...e }; delete n[k]; return n }) }
+
+  const filteredJobs = form.clientId ? jobs.filter((j) => j.clientId === form.clientId) : jobs
+  const filteredCandidates = form.jobId ? candidates.filter((c) => c.jobId === form.jobId) : candidates
+
+  const selectedClient    = clients.find((c) => c.id === form.clientId)
+  const selectedJob       = jobs.find((j) => j.id === form.jobId)
+  const selectedCandidate = candidates.find((c) => c.id === form.candidateId)
+  const selectedRecruiter = recruiters.find((r) => r.id === form.recruiterId)
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault()
+    const errs: Record<string, string> = {}
+    if (!form.title.trim())   errs.title = 'Title is required'
+    if (!form.summary.trim()) errs.summary = 'Summary is required'
+    if (Object.keys(errs).length) { setErr(errs); return }
+
+    const now = new Date().toISOString()
+    const a: Activity = {
+      id:             `a-local-${Date.now()}`,
+      type:           form.type,
+      title:          form.title.trim(),
+      timestamp:      now,
+      clientId:       form.clientId || undefined,
+      clientName:     selectedClient?.companyName,
+      candidateId:    form.candidateId || undefined,
+      candidateName:  selectedCandidate?.name,
+      jobId:          form.jobId || undefined,
+      jobTitle:       selectedJob?.title,
+      recruiterId:    form.recruiterId,
+      recruiterName:  selectedRecruiter?.name ?? '',
+      summary:        form.summary.trim(),
+      nextAction:     form.nextAction.trim() || undefined,
+      status:         form.status,
+    }
+    onSave(a)
+    onClose()
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/30" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
+          <div>
+            <h2 className="text-sm font-bold text-slate-800">Log Activity</h2>
+            <p className="text-xs text-slate-400 mt-0.5">Record a call, email, meeting, or other interaction</p>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 transition-colors">
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Type */}
+          <div>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Activity Type</label>
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(ACTIVITY_LABELS) as ActivityType[]).map((t) => (
+                <button key={t} type="button" onClick={() => set('type', t)}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${form.type === t ? `${ACTIVITY_COLORS[t]} border-current` : 'border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+                  <span>{ACTIVITY_EMOJI[t]}</span>{ACTIVITY_LABELS[t]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Title */}
+          <div>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Title <span className="text-red-400">*</span></label>
+            <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Brief activity title…"
+              className={`w-full text-sm border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30 ${err.title ? 'border-red-400' : 'border-slate-200'}`} />
+            {err.title && <p className="text-xs text-red-500 mt-1">{err.title}</p>}
+          </div>
+
+          {/* Entities */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Client</label>
+              <select value={form.clientId} onChange={(e) => { set('clientId', e.target.value); set('jobId', ''); set('candidateId', '') }}
+                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option value="">— None —</option>
+                {clients.map((c) => <option key={c.id} value={c.id}>{c.companyName}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Job</label>
+              <select value={form.jobId} onChange={(e) => { set('jobId', e.target.value); set('candidateId', '') }}
+                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option value="">— None —</option>
+                {filteredJobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Candidate</label>
+              <select value={form.candidateId} onChange={(e) => set('candidateId', e.target.value)}
+                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                <option value="">— None —</option>
+                {filteredCandidates.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Recruiter</label>
+              <select value={form.recruiterId} onChange={(e) => set('recruiterId', e.target.value)}
+                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                {recruiters.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Status</label>
+            <div className="flex gap-2">
+              {(['completed', 'pending', 'info', 'cancelled'] as ActivityStatus[]).map((s) => (
+                <button key={s} type="button" onClick={() => set('status', s)}
+                  className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border capitalize transition-colors ${form.status === s ? STATUS_COLORS[s] : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Summary */}
+          <div>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Summary <span className="text-red-400">*</span></label>
+            <textarea rows={3} value={form.summary} onChange={(e) => set('summary', e.target.value)}
+              placeholder="What happened? Key outcomes, decisions, action items…"
+              className={`w-full text-sm border rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 ${err.summary ? 'border-red-400' : 'border-slate-200'}`} />
+            {err.summary && <p className="text-xs text-red-500 mt-1">{err.summary}</p>}
+          </div>
+
+          {/* Next Action */}
+          <div>
+            <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Next Action <span className="text-slate-300 font-normal normal-case">(optional)</span></label>
+            <input value={form.nextAction} onChange={(e) => set('nextAction', e.target.value)}
+              placeholder="e.g. Send shortlist by Jul 15…"
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+        </form>
+
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-100 flex-shrink-0">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-500 hover:bg-slate-100 rounded-lg transition-colors">Cancel</button>
+          <button type="submit" form="" onClick={submit}
+            className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-primary-dark transition-colors">
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>check</span>
+            Save Activity
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── All available filter options ─────────────────────────────────────────────────
+const ALL_TYPES   = Object.keys(ACTIVITY_LABELS) as ActivityType[]
+const ALL_STATUSES: ActivityStatus[] = ['completed', 'pending', 'info', 'cancelled']
+const ALL_RECRUITERS = recruiters.map((r) => r.name)
+
+// ── Main Page ────────────────────────────────────────────────────────────────────
+export default function ActivityLogPage() {
+  const [local, setLocal] = useState<Activity[]>(loadLocal)
+  const [search,      setSearch]      = useState('')
+  const [typeFilter,  setTypeFilter]  = useState<ActivityType | ''>('')
+  const [clientFilter, setClientFilter] = useState('')
+  const [recruiterFilter, setRecruiterFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState<ActivityStatus | ''>('')
+  const [viewMode,    setViewMode]    = useState<'feed' | 'table'>('feed')
+  const [drawerItem,  setDrawerItem]  = useState<Activity | null>(null)
+  const [showModal,   setShowModal]   = useState(false)
+
+  useEffect(() => { saveLocal(local) }, [local])
+
+  const allActivities = useMemo(
+    () => [...local, ...initialActivities].sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+    [local]
+  )
+
+  const filtered = useMemo(() => allActivities.filter((a) => {
+    const q = search.toLowerCase()
+    if (q && !a.title.toLowerCase().includes(q) && !a.summary.toLowerCase().includes(q)
+         && !(a.clientName ?? '').toLowerCase().includes(q)
+         && !(a.candidateName ?? '').toLowerCase().includes(q)
+         && !(a.jobTitle ?? '').toLowerCase().includes(q)
+         && !a.recruiterName.toLowerCase().includes(q)) return false
+    if (typeFilter     && a.type !== typeFilter)                     return false
+    if (clientFilter   && a.clientId !== clientFilter)               return false
+    if (recruiterFilter && a.recruiterName !== recruiterFilter)      return false
+    if (statusFilter   && a.status !== statusFilter)                 return false
+    return true
+  }), [allActivities, search, typeFilter, clientFilter, recruiterFilter, statusFilter])
+
+  // Group by date for feed view
+  const groups = useMemo(() => {
+    const map = new Map<string, Activity[]>()
+    filtered.forEach((a) => {
+      const k = groupKey(a.timestamp)
+      const arr = map.get(k) ?? []
+      arr.push(a)
+      map.set(k, arr)
+    })
+    return Array.from(map.entries()).sort(([a], [b]) => b.localeCompare(a))
+  }, [filtered])
+
+  const hasFilters = !!(search || typeFilter || clientFilter || recruiterFilter || statusFilter)
+
+  function clearFilters() {
+    setSearch(''); setTypeFilter(''); setClientFilter(''); setRecruiterFilter(''); setStatusFilter('')
+  }
+
+  function exportCSV() {
+    const header = 'Time,Type,Title,Client,Candidate,Job,Recruiter,Status\n'
+    const rows = filtered.map((a) =>
+      [a.timestamp, ACTIVITY_LABELS[a.type], `"${a.title}"`, a.clientName ?? '', a.candidateName ?? '', a.jobTitle ?? '', a.recruiterName, a.status].join(',')
+    ).join('\n')
+    const blob = new Blob([header + rows], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url; link.download = 'activity_logs.csv'; link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  return (
+    <div className="flex h-screen bg-slate-50 overflow-hidden">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+        {/* ── Page Header ─────────────────────────────────────────────────── */}
+        <div className="bg-white border-b border-slate-200 px-6 py-4 flex-shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-lg font-bold text-slate-900">Activity Logs</h1>
+              <p className="text-xs text-slate-400 mt-0.5">Track recruiter activities across clients, jobs and candidates</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={exportCSV}
+                className="flex items-center gap-1.5 text-sm font-medium text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>download</span>
+                Export CSV
+              </button>
+              <button onClick={() => setShowModal(true)}
+                className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>add</span>
+                Log Activity
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Toolbar ─────────────────────────────────────────────────────── */}
+        <div className="bg-white border-b border-slate-100 px-6 py-3 flex items-center gap-3 flex-wrap flex-shrink-0">
+          {/* Search */}
+          <div className="relative min-w-[220px]">
+            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '15px' }}>search</span>
+            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by client, candidate, keyword…"
+              className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
+          </div>
+
+          {/* Type */}
+          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as ActivityType | '')}
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">All Types</option>
+            {ALL_TYPES.map((t) => <option key={t} value={t}>{ACTIVITY_EMOJI[t]} {ACTIVITY_LABELS[t]}</option>)}
+          </select>
+
+          {/* Client */}
+          <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)}
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">All Clients</option>
+            {clients.map((c) => <option key={c.id} value={c.id}>{c.companyName}</option>)}
+          </select>
+
+          {/* Recruiter */}
+          <select value={recruiterFilter} onChange={(e) => setRecruiterFilter(e.target.value)}
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">All Recruiters</option>
+            {ALL_RECRUITERS.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+
+          {/* Status */}
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as ActivityStatus | '')}
+            className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
+            <option value="">All Statuses</option>
+            {ALL_STATUSES.map((s) => <option key={s} value={s} className="capitalize">{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
+          </select>
+
+          {hasFilters && (
+            <button onClick={clearFilters} className="text-xs font-semibold text-slate-400 hover:text-slate-600 flex items-center gap-1 transition-colors">
+              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
+              Clear
+            </button>
+          )}
+
+          {/* Count + View Toggle */}
+          <div className="ml-auto flex items-center gap-3">
+            <span className="text-xs text-slate-400 font-medium">{filtered.length} activities</span>
+            <div className="flex bg-slate-100 rounded-lg p-0.5">
+              <button onClick={() => setViewMode('feed')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${viewMode === 'feed' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>view_agenda</span>
+                Feed
+              </button>
+              <button onClick={() => setViewMode('table')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${viewMode === 'table' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
+                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>table_rows</span>
+                Table
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Content ─────────────────────────────────────────────────────── */}
+        <div className="flex-1 overflow-y-auto">
+          {filtered.length === 0 ? (
+            <EmptyState onClear={clearFilters} />
+          ) : viewMode === 'feed' ? (
+            <div className="max-w-3xl mx-auto bg-white my-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              {groups.map(([key, items]) => (
+                <div key={key}>
+                  <DateSeparator label={dateLabel(items[0].timestamp)} count={items.length} />
+                  {items.map((item) => (
+                    <ActivityItem key={item.id} item={item} onView={() => setDrawerItem(item)} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white my-4 mx-4 rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <TableView items={filtered} onView={setDrawerItem} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Drawer */}
+      {drawerItem && <ActivityDrawer item={drawerItem} onClose={() => setDrawerItem(null)} />}
+
+      {/* Log Modal */}
+      {showModal && (
+        <LogModal
+          onClose={() => setShowModal(false)}
+          onSave={(a) => setLocal((prev) => [a, ...prev])}
+        />
+      )}
     </div>
   )
 }
