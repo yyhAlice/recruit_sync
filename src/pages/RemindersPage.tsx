@@ -39,18 +39,22 @@ function sectionOf(r: Reminder): string {
   return 'later'
 }
 
-function dueDateDisplay(r: Reminder): { text: string; cls: string } {
+function dueDateDisplay(r: Reminder): { text: string; cls: string; icon: string } {
   const sec = sectionOf(r)
   if (sec === 'overdue') {
     const days = Math.ceil((new Date(TODAY).getTime() - new Date(r.dueDate).getTime()) / 86400000)
-    const d    = new Date(r.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-    return { text: `${d} · ${days}d overdue`, cls: 'text-red-500' }
+    return { text: `${days} day${days !== 1 ? 's' : ''} overdue`, cls: 'text-red-600', icon: 'warning' }
   }
-  if (sec === 'today')    return { text: r.dueTime ? `Today ${r.dueTime}` : 'Today',       cls: 'text-amber-600' }
-  if (sec === 'tomorrow') return { text: r.dueTime ? `Tomorrow ${r.dueTime}` : 'Tomorrow', cls: 'text-blue-500'  }
+  if (sec === 'today') {
+    const t = r.dueTime ? `, ${r.dueTime}` : ''
+    return { text: `Today${t}`, cls: 'text-amber-600', icon: 'today' }
+  }
+  if (sec === 'tomorrow') {
+    const t = r.dueTime ? `, ${r.dueTime}` : ''
+    return { text: `Tomorrow${t}`, cls: 'text-blue-500', icon: 'calendar_today' }
+  }
   const d = new Date(r.dueDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-  const inDays = Math.ceil((new Date(r.dueDate).getTime() - new Date(TODAY).getTime()) / 86400000)
-  return { text: `${d} · in ${inDays}d`, cls: 'text-slate-500' }
+  return { text: d, cls: 'text-slate-500', icon: 'calendar_today' }
 }
 
 function fmtDate(iso: string) {
@@ -60,10 +64,10 @@ function fmtDate(iso: string) {
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const PRIORITY_EMOJI: Record<Priority, string> = { high: '🔴', medium: '🟡', low: '⚪' }
 
-const PRIORITY_CFG: Record<Priority, { bg: string; text: string; ring: string; label: string; dot: string }> = {
-  high:   { bg: 'bg-red-50',    text: 'text-red-600',    ring: 'ring-red-100',    label: 'High',   dot: 'bg-red-500'    },
-  medium: { bg: 'bg-amber-50',  text: 'text-amber-600',  ring: 'ring-amber-100',  label: 'Medium', dot: 'bg-amber-400'  },
-  low:    { bg: 'bg-slate-100', text: 'text-slate-500',  ring: 'ring-slate-200',  label: 'Low',    dot: 'bg-slate-400'  },
+const PRIORITY_CFG: Record<Priority, { bg: string; text: string; label: string }> = {
+  high:   { bg: 'bg-red-100',   text: 'text-red-700',   label: 'High'   },
+  medium: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Medium' },
+  low:    { bg: 'bg-slate-100', text: 'text-slate-500', label: 'Low'    },
 }
 
 const AVATAR_COLORS = [
@@ -71,19 +75,17 @@ const AVATAR_COLORS = [
   'bg-amber-500', 'bg-rose-500',  'bg-teal-500',
 ]
 
-// ── Shared sub-components ──────────────────────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function PriorityBadge({ priority }: { priority: Priority }) {
-  const cfg = PRIORITY_CFG[priority]
+  const { bg, text, label } = PRIORITY_CFG[priority]
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium whitespace-nowrap flex-shrink-0 ${cfg.text}`}>
-      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
-      {cfg.label}
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold whitespace-nowrap flex-shrink-0 ${bg} ${text}`}>
+      {label}
     </span>
   )
 }
 
-// Alias so DetailDrawer's <PriorityIndicator> still compiles unchanged
 function PriorityIndicator({ priority }: { priority: Priority }) {
   return <PriorityBadge priority={priority} />
 }
@@ -91,68 +93,52 @@ function PriorityIndicator({ priority }: { priority: Priority }) {
 function DueDateChip({ reminder }: { reminder: Reminder }) {
   if (reminder.status === 'completed' && reminder.completedAt) {
     return (
-      <span className="inline-flex items-center gap-1 text-[12px] text-slate-400 whitespace-nowrap flex-shrink-0">
-        <span className="material-symbols-outlined text-slate-300" style={{ fontSize: '13px' }}>check_circle</span>
-        Done {fmtDate(reminder.completedAt)}
+      <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-400 whitespace-nowrap flex-shrink-0">
+        <Check size={12} className="text-slate-300" strokeWidth={2.5} />
+        {fmtDate(reminder.completedAt)}
       </span>
     )
   }
-  const { text, cls } = dueDateDisplay(reminder)
-  const sec = sectionOf(reminder)
-  const iconCls =
-    sec === 'overdue'   ? 'text-red-400'    :
-    sec === 'today'     ? 'text-amber-500'  :
-    sec === 'tomorrow'  ? 'text-blue-400'   : 'text-slate-400'
+  const { text, cls, icon } = dueDateDisplay(reminder)
+  const isOverdue = sectionOf(reminder) === 'overdue'
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[12px] font-semibold whitespace-nowrap flex-shrink-0 ${cls}`}>
-      <span className={`material-symbols-outlined flex-shrink-0 ${iconCls}`} style={{ fontSize: '14px' }}>calendar_today</span>
+    <span className={`inline-flex items-center gap-1.5 text-[13px] whitespace-nowrap flex-shrink-0 ${isOverdue ? 'font-bold' : 'font-medium'} ${cls}`}>
+      <span className="material-symbols-outlined flex-shrink-0" style={{ fontSize: '14px' }}>{icon}</span>
       {text}
     </span>
   )
 }
 
 function RecruiterAvatar({ name }: { name: string }) {
-  const parts  = name.trim().split(' ')
-  const init   = parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : (parts[0] ?? '?').slice(0, 2)
-  const color  = AVATAR_COLORS[name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length]
-  const shortN = parts.length >= 2 ? `${parts[0][0]}. ${parts.slice(1).join(' ')}` : name
+  const parts = name.trim().split(' ')
+  const init  = parts.length >= 2 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : (parts[0] ?? '?').slice(0, 2)
+  const color = AVATAR_COLORS[name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length]
   return (
-    <div className="inline-flex items-center gap-1.5 flex-shrink-0">
-      <div className={`w-6 h-6 rounded-full ${color} flex items-center justify-center`}>
-        <span className="text-[9px] font-bold text-white uppercase leading-none">{init}</span>
-      </div>
-      <span className="text-[12px] text-slate-500 whitespace-nowrap hidden xl:inline">{shortN}</span>
+    <div className={`w-6 h-6 rounded-full ${color} flex items-center justify-center flex-shrink-0`} title={name}>
+      <span className="text-[9px] font-bold text-white uppercase leading-none">{init}</span>
     </div>
   )
 }
 
-// ── Stat Card ─────────────────────────────────────────────────────────────────
-interface StatCardProps {
-  icon: string
-  iconBg: string
-  iconColor: string
-  borderColor: string
-  count: number
-  label: string
-  active: boolean
-  countCls: string
-  onClick: () => void
-}
-function StatCard({ icon, iconBg, iconColor, borderColor, count, label, active, countCls, onClick }: StatCardProps) {
+// ── Stat Chip ─────────────────────────────────────────────────────────────────
+function StatChip({
+  dotCls, label, count, active, activeText, onClick,
+}: {
+  dotCls: string; label: string; count: number
+  active: boolean; activeText: string; onClick: () => void
+}) {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 min-w-0 bg-white rounded-xl px-4 py-3.5 text-left transition-all border shadow-sm cursor-pointer ${
+      className={`inline-flex items-center gap-2 px-3 h-8 rounded-lg text-[13px] transition-all border ${
         active
-          ? `border-b-[3px] ${borderColor} shadow-md`
-          : 'border-slate-100 hover:shadow-md hover:border-slate-200'
+          ? `bg-white border-slate-200 shadow-sm font-semibold ${activeText}`
+          : 'border-transparent font-medium text-slate-500 hover:bg-white hover:border-slate-200 hover:text-slate-700'
       }`}
     >
-      <span className={`w-7 h-7 rounded-lg flex items-center justify-center mb-2 ${iconBg}`}>
-        <span className={`material-symbols-outlined ${iconColor}`} style={{ fontSize: '15px' }}>{icon}</span>
-      </span>
-      <span className={`text-[26px] font-bold leading-none block mb-0.5 ${active ? countCls : 'text-slate-800'}`}>{count}</span>
-      <span className="text-[12px] text-slate-400 font-medium block">{label}</span>
+      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${active ? dotCls : 'bg-slate-300'}`} />
+      {label}
+      <span className={`tabular-nums font-bold ${active ? activeText : 'text-slate-600'}`}>{count}</span>
     </button>
   )
 }
@@ -220,68 +206,81 @@ function ReminderRow({
 
   const accentCls =
     sec === 'overdue' ? 'bg-red-400'   :
-    sec === 'today'   ? 'bg-amber-400' : 'bg-transparent'
+    sec === 'today'   ? 'bg-amber-400' : ''
 
   return (
     <div
-      className={`group relative flex items-center gap-4 px-6 min-h-[72px] hover:bg-slate-50 hover:shadow-[0_1px_4px_rgba(0,0,0,0.04)] transition-all border-b border-slate-50 last:border-0 cursor-pointer ${completed ? 'opacity-55' : ''}`}
-      style={{ paddingTop: '16px', paddingBottom: '16px' }}
+      className={`group relative flex items-center gap-3 pl-6 pr-4 min-h-[64px] border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors cursor-pointer ${completed ? 'opacity-60' : ''}`}
+      style={{ paddingTop: '12px', paddingBottom: '12px' }}
     >
-      {/* Left accent — overdue & today only */}
-      {!completed && (sec === 'overdue' || sec === 'today') && (
-        <div className={`absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full ${accentCls}`} />
+      {/* Left accent — overdue and today only */}
+      {!completed && accentCls && (
+        <div className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full ${accentCls}`} />
       )}
 
       {/* Checkbox */}
       <button
         onClick={(e) => { e.stopPropagation(); onCheck() }}
-        className={`flex-shrink-0 w-[18px] h-[18px] rounded-[5px] border-2 flex items-center justify-center transition-colors ${completed ? 'bg-slate-100 border-slate-300' : 'border-slate-300 hover:border-primary'}`}
+        className={`flex-shrink-0 w-[18px] h-[18px] rounded-[5px] border-2 flex items-center justify-center transition-colors ${
+          completed ? 'bg-slate-100 border-slate-300' : 'border-slate-300 hover:border-primary'
+        }`}
       >
         {completed && <Check size={9} className="text-slate-400" strokeWidth={3} />}
       </button>
 
-      {/* Title + context */}
+      {/* Title + cross-fade: metadata ↔ quick actions */}
       <div className="flex-1 min-w-0" onClick={onView}>
-        <p className={`text-[15px] font-semibold leading-snug truncate ${completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+        <p className={`text-[15px] font-semibold leading-snug truncate ${
+          completed ? 'line-through text-slate-400' : 'text-slate-800'
+        }`}>
           {reminder.title}
         </p>
-        {context && (
-          <p className="text-[12px] text-slate-400 mt-0.5 truncate">{context}</p>
-        )}
+        <div className="relative h-[18px] mt-0.5">
+          {context && (
+            <p className="absolute inset-0 text-[13px] text-slate-500 truncate leading-[18px] transition-opacity group-hover:opacity-0">
+              {context}
+            </p>
+          )}
+          {!completed && (
+            <div className="absolute inset-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <button
+                onClick={(e) => { e.stopPropagation(); onCheck() }}
+                className="inline-flex items-center gap-1 px-2 h-[18px] rounded text-[11px] font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors whitespace-nowrap"
+              >
+                <Check size={9} strokeWidth={2.5} />Complete
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit() }}
+                className="inline-flex items-center gap-1 px-2 h-[18px] rounded text-[11px] font-medium text-slate-500 hover:bg-slate-200 transition-colors whitespace-nowrap"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>edit</span>Edit
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onReschedule() }}
+                className="inline-flex items-center gap-1 px-2 h-[18px] rounded text-[11px] font-medium text-slate-500 hover:bg-slate-200 transition-colors whitespace-nowrap"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>schedule</span>Reschedule
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Hover quick actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mr-2">
-        {!completed && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onCheck() }}
-            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-emerald-600 bg-emerald-50 hover:bg-emerald-100 transition-colors whitespace-nowrap"
-          >
-            <Check size={10} strokeWidth={2.5} />
-            Complete
-          </button>
-        )}
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit() }}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>edit</span>
-          Edit
-        </button>
-        <button
-          onClick={(e) => { e.stopPropagation(); onReschedule() }}
-          className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-slate-500 hover:bg-slate-100 transition-colors"
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>schedule</span>
-          Reschedule
-        </button>
-      </div>
-
-      {/* Right meta */}
-      <div className="flex items-center gap-3 flex-shrink-0">
+      {/* Due date — fixed width column so dates align vertically */}
+      <div className="w-[152px] flex-shrink-0 hidden sm:flex justify-end">
         <DueDateChip reminder={reminder} />
+      </div>
+
+      {/* Priority badge — fixed width */}
+      <div className="w-[72px] flex-shrink-0 hidden md:flex justify-end">
         <PriorityBadge priority={reminder.priority} />
-        <RecruiterAvatar name={reminder.assignedRecruiter} />
+      </div>
+
+      {/* Avatar (fades out on hover) + More menu (fades in on hover) */}
+      <div className="flex-shrink-0 flex items-center gap-1.5">
+        <div className="transition-opacity group-hover:opacity-0">
+          <RecruiterAvatar name={reminder.assignedRecruiter} />
+        </div>
         <MoreMenu
           onView={onView} onEdit={onEdit} onReschedule={onReschedule}
           onComplete={onCheck} onDuplicate={onDuplicate} onDelete={onDelete}
@@ -292,13 +291,15 @@ function ReminderRow({
 }
 
 // ── Reminder Section ──────────────────────────────────────────────────────────
-const SECTION_META: Record<string, { label: string; labelCls: string }> = {
-  overdue:   { label: 'Overdue',   labelCls: 'text-red-500'   },
-  today:     { label: 'Today',     labelCls: 'text-amber-600' },
-  tomorrow:  { label: 'Tomorrow',  labelCls: 'text-blue-500'  },
-  thisWeek:  { label: 'This Week', labelCls: 'text-slate-500' },
-  later:     { label: 'Upcoming',  labelCls: 'text-slate-500' },
-  completed: { label: 'Completed', labelCls: 'text-green-600' },
+const SECTION_META: Record<string, {
+  label: string; labelCls: string; headerBg: string; dotCls: string; borderCls: string
+}> = {
+  overdue:   { label: 'Overdue',   labelCls: 'text-red-600',   headerBg: 'bg-red-50/80',   dotCls: 'bg-red-400',   borderCls: 'border-red-100'   },
+  today:     { label: 'Today',     labelCls: 'text-amber-700', headerBg: 'bg-amber-50/70', dotCls: 'bg-amber-400', borderCls: 'border-amber-100' },
+  tomorrow:  { label: 'Tomorrow',  labelCls: 'text-blue-600',  headerBg: 'bg-slate-50',    dotCls: 'bg-blue-400',  borderCls: 'border-slate-200' },
+  thisWeek:  { label: 'This Week', labelCls: 'text-slate-600', headerBg: 'bg-slate-50',    dotCls: 'bg-slate-300', borderCls: 'border-slate-200' },
+  later:     { label: 'Upcoming',  labelCls: 'text-slate-600', headerBg: 'bg-slate-50',    dotCls: 'bg-slate-300', borderCls: 'border-slate-200' },
+  completed: { label: 'Completed', labelCls: 'text-green-700', headerBg: 'bg-green-50/50', dotCls: 'bg-green-400', borderCls: 'border-green-100' },
 }
 
 const SHOW_MORE_LIMIT = 3
@@ -317,23 +318,31 @@ function ReminderSection({
   const meta = SECTION_META[sectionKey]
   if (!meta || reminders.length === 0) return null
 
-  const useLimit   = ['tomorrow', 'thisWeek', 'later'].includes(sectionKey) && !showAll
-  const visible    = useLimit ? reminders.slice(0, SHOW_MORE_LIMIT) : reminders
+  const useLimit    = ['tomorrow', 'thisWeek', 'later'].includes(sectionKey) && !showAll
+  const visible     = useLimit ? reminders.slice(0, SHOW_MORE_LIMIT) : reminders
   const hiddenCount = reminders.length - visible.length
 
   return (
-    <div className="mb-1">
-      {/* Section header */}
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 px-6 py-2.5 text-left hover:bg-slate-50/70 transition-colors group/sec"
-      >
-        <ChevronDown
-          size={12}
-          className={`text-slate-300 group-hover/sec:text-slate-400 transition-transform flex-shrink-0 ${!open ? '-rotate-90' : ''}`}
-        />
-        <span className={`text-[11px] font-bold uppercase tracking-widest ${meta.labelCls}`}>{meta.label} ({reminders.length})</span>
-      </button>
+    <div>
+      {/* Sticky section header */}
+      <div className={`sticky top-0 z-10 flex items-center gap-2.5 px-6 py-2 border-y ${meta.headerBg} ${meta.borderCls}`}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 flex-1 min-w-0"
+        >
+          <ChevronDown
+            size={11}
+            className={`text-slate-400 transition-transform flex-shrink-0 ${!open ? '-rotate-90' : ''}`}
+          />
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${meta.dotCls}`} />
+          <span className={`text-[11px] font-bold uppercase tracking-widest ${meta.labelCls}`}>
+            {meta.label}
+          </span>
+          <span className="text-[11px] font-semibold text-slate-400 ml-0.5">
+            ({reminders.length})
+          </span>
+        </button>
+      </div>
 
       {open && (
         <>
@@ -352,7 +361,7 @@ function ReminderSection({
           {hiddenCount > 0 && (
             <button
               onClick={() => setShowAll(true)}
-              className="flex items-center gap-1.5 pl-[72px] py-2.5 text-[12px] font-semibold text-primary hover:text-primary-dark transition-colors"
+              className="flex items-center gap-1.5 pl-[58px] py-2.5 text-[12px] font-semibold text-primary hover:text-primary-dark transition-colors"
             >
               <Plus size={12} strokeWidth={2.5} />
               {hiddenCount} more reminder{hiddenCount !== 1 ? 's' : ''}
@@ -744,23 +753,22 @@ export default function RemindersPage() {
   const allRecruiters = [...new Set(reminders.map((r) => r.assignedRecruiter))]
 
   const sharedRowProps = {
-    onCheck:      (id: string)   => toggleComplete(id),
-    onView:       (r: Reminder)  => setDrawer(r),
-    onEdit:       (r: Reminder)  => setModal(r),
-    onReschedule: (r: Reminder)  => setModal(r),
-    onDuplicate:  (r: Reminder)  => duplicateReminder(r),
-    onDelete:     (id: string)   => setConfirmDel(id),
+    onCheck:      (id: string)  => toggleComplete(id),
+    onView:       (r: Reminder) => setDrawer(r),
+    onEdit:       (r: Reminder) => setModal(r),
+    onReschedule: (r: Reminder) => setModal(r),
+    onDuplicate:  (r: Reminder) => duplicateReminder(r),
+    onDelete:     (id: string)  => setConfirmDel(id),
   }
 
-  // Stat card toggle: clicking active card resets to 'all'
   function toggleTab(key: TabKey) { setTab((prev) => prev === key ? 'all' : key) }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-[#F8FAFC] overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* ── Header ────────────────────────────────────────────────────── */}
+        {/* ── Page header ───────────────────────────────────────────────── */}
         <div className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
           <div>
             <h1 className="text-[20px] font-bold text-slate-900 leading-tight">Reminders</h1>
@@ -775,101 +783,86 @@ export default function RemindersPage() {
           </button>
         </div>
 
-        {/* ── Stat Cards ────────────────────────────────────────────────── */}
-        <div className="px-6 pt-4 pb-3 flex gap-3 flex-shrink-0">
-          <StatCard
-            icon="warning" iconBg="bg-red-100" iconColor="text-red-500"
-            borderColor="border-red-400" countCls="text-red-600"
-            count={sectionCounts.overdue} label="Overdue"
-            active={tab === 'overdue'} onClick={() => toggleTab('overdue')}
+        {/* ── Stat chips — compact filter strip ─────────────────────────── */}
+        <div className="bg-white border-b border-slate-100 px-6 py-2.5 flex items-center gap-1 flex-shrink-0">
+          <StatChip
+            dotCls="bg-red-400" label="Overdue" count={sectionCounts.overdue}
+            active={tab === 'overdue'} activeText="text-red-600"
+            onClick={() => toggleTab('overdue')}
           />
-          <StatCard
-            icon="today" iconBg="bg-amber-100" iconColor="text-amber-500"
-            borderColor="border-amber-400" countCls="text-amber-600"
-            count={sectionCounts.today} label="Today"
-            active={tab === 'today'} onClick={() => toggleTab('today')}
+          <StatChip
+            dotCls="bg-amber-400" label="Today" count={sectionCounts.today}
+            active={tab === 'today'} activeText="text-amber-600"
+            onClick={() => toggleTab('today')}
           />
-          <StatCard
-            icon="calendar_month" iconBg="bg-blue-100" iconColor="text-blue-500"
-            borderColor="border-blue-400" countCls="text-blue-600"
-            count={sectionCounts.upcoming} label="Upcoming"
-            active={tab === 'upcoming'} onClick={() => toggleTab('upcoming')}
+          <StatChip
+            dotCls="bg-blue-400" label="Upcoming" count={sectionCounts.upcoming}
+            active={tab === 'upcoming'} activeText="text-blue-600"
+            onClick={() => toggleTab('upcoming')}
           />
-          <StatCard
-            icon="check_circle" iconBg="bg-green-100" iconColor="text-green-600"
-            borderColor="border-green-400" countCls="text-green-600"
-            count={completed.length} label="Completed"
-            active={tab === 'completed'} onClick={() => toggleTab('completed')}
+          <StatChip
+            dotCls="bg-green-400" label="Completed" count={completed.length}
+            active={tab === 'completed'} activeText="text-green-700"
+            onClick={() => toggleTab('completed')}
           />
-          <StatCard
-            icon="notifications" iconBg="bg-slate-100" iconColor="text-slate-500"
-            borderColor="border-slate-400" countCls="text-slate-700"
-            count={reminders.length} label="Total"
-            active={tab === 'all'} onClick={() => setTab('all')}
+          <span className="mx-1.5 w-px h-4 bg-slate-200 flex-shrink-0" />
+          <StatChip
+            dotCls="bg-slate-400" label="Total" count={reminders.length}
+            active={tab === 'all'} activeText="text-slate-700"
+            onClick={() => setTab('all')}
           />
         </div>
 
-        {/* ── Filters ───────────────────────────────────────────────────── */}
-        <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center gap-2.5 flex-shrink-0">
-          {/* Search */}
-          <div className="relative flex-1 max-w-[280px]">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '16px' }}>search</span>
+        {/* ── Filter bar ────────────────────────────────────────────────── */}
+        <div className="bg-white border-b border-slate-200 px-6 py-2.5 flex items-center gap-2 flex-shrink-0">
+          <div className="relative flex-1 max-w-[240px]">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '15px' }}>search</span>
             <input
               type="text" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search reminders…"
-              className="w-full h-10 pl-9 pr-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 bg-white placeholder:text-slate-400"
+              className="w-full h-9 pl-8 pr-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 bg-white placeholder:text-slate-400"
             />
           </div>
 
-          {/* Recruiter */}
           <select
             value={recruiterF} onChange={(e) => setRecruiterF(e.target.value)}
-            className="h-10 text-sm border border-slate-200 rounded-lg px-3 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 min-w-[140px]"
+            className="h-9 text-sm border border-slate-200 rounded-lg px-2.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[130px]"
           >
-            <option value="">Recruiter · All</option>
+            <option value="">Recruiter</option>
             {allRecruiters.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
 
-          {/* Type */}
           <select
             value={typeF} onChange={(e) => setTypeF(e.target.value as RelatedType | '')}
-            className="h-10 text-sm border border-slate-200 rounded-lg px-3 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 min-w-[140px]"
+            className="h-9 text-sm border border-slate-200 rounded-lg px-2.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[100px]"
           >
-            <option value="">Type · All</option>
+            <option value="">Type</option>
             <option value="client">Client</option>
             <option value="job">Job</option>
             <option value="candidate">Candidate</option>
             <option value="candidateJob">Candidate + Job</option>
           </select>
 
-          {/* Sort */}
           <select
             value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}
-            className="h-10 text-sm border border-slate-200 rounded-lg px-3 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/50 min-w-[190px]"
+            className="h-9 text-sm border border-slate-200 rounded-lg px-2.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/20 min-w-[150px]"
           >
-            <option value="dueAsc">Sort · Due date (soonest)</option>
-            <option value="dueDesc">Sort · Due date (latest)</option>
-            <option value="priority">Sort · Priority</option>
-            <option value="createdAt">Sort · Most recent</option>
+            <option value="dueAsc">Due date ↑</option>
+            <option value="dueDesc">Due date ↓</option>
+            <option value="priority">Priority</option>
+            <option value="createdAt">Most recent</option>
           </select>
 
-          {/* Clear filters */}
           {hasFilters && (
             <button
               onClick={() => { setSearch(''); setRecruiterF(''); setTypeF('') }}
-              className="h-10 flex items-center gap-1.5 px-3 text-sm font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+              className="h-9 flex items-center gap-1 px-2.5 text-sm font-medium text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
             >
               <X size={13} />Clear
             </button>
           )}
 
-          <div className="ml-auto flex items-center gap-3">
-            <span className="text-[12px] text-slate-400 tabular-nums">{filtered.length} reminders</span>
-            <button className="h-10 flex items-center gap-2 px-3 text-sm font-medium text-slate-500 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>filter_list</span>
-              Filters
-            </button>
-          </div>
+          <span className="ml-auto text-[12px] text-slate-400 tabular-nums">{filtered.length} reminders</span>
         </div>
 
         {/* ── Content ───────────────────────────────────────────────────── */}
