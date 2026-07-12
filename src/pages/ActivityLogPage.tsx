@@ -19,7 +19,7 @@ function saveLocal(items: Activity[]) {
 function dateLabel(ts: string): string {
   const d = new Date(ts)
   const today = new Date('2026-07-11')
-  const diff = Math.floor((today.getTime() - d.setHours(0,0,0,0)) / 86400000)
+  const diff = Math.floor((today.getTime() - d.setHours(0, 0, 0, 0)) / 86400000)
   if (diff === 0) return 'Today'
   if (diff === 1) return 'Yesterday'
   if (diff < 7)  return d.toLocaleDateString('en-US', { weekday: 'long' })
@@ -32,22 +32,98 @@ function fmtTime(ts: string) {
   return new Date(ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
 }
 
-// ── Status Label (compact inline) ───────────────────────────────────────────────
-const STATUS_DOT: Record<ActivityStatus, string> = {
-  completed: '🟢', pending: '🟡', cancelled: '⚫', info: '🔵',
+// ── Activity type → icon config ───────────────────────────────────────────────
+const TYPE_BG: Record<ActivityType, string> = {
+  call:          'bg-green-100',
+  email:         'bg-indigo-100',
+  meeting:       'bg-blue-100',
+  candidate:     'bg-teal-100',
+  client:        'bg-purple-100',
+  job:           'bg-slate-100',
+  cv_generated:  'bg-violet-100',
+  file_uploaded: 'bg-orange-100',
+  note:          'bg-gray-100',
+  reminder:      'bg-amber-100',
+  task:          'bg-emerald-100',
 }
-const STATUS_LABEL_TEXT: Record<ActivityStatus, string> = {
-  completed: 'Completed', pending: 'Pending', cancelled: 'Cancelled', info: 'Info',
+const TYPE_ICON_COLOR: Record<ActivityType, string> = {
+  call:          'text-green-600',
+  email:         'text-indigo-600',
+  meeting:       'text-blue-600',
+  candidate:     'text-teal-600',
+  client:        'text-purple-600',
+  job:           'text-slate-500',
+  cv_generated:  'text-violet-600',
+  file_uploaded: 'text-orange-600',
+  note:          'text-gray-500',
+  reminder:      'text-amber-600',
+  task:          'text-emerald-600',
 }
-function StatusLabel({ status }: { status: ActivityStatus }) {
+const TYPE_ICON: Record<ActivityType, string> = {
+  call:          'call',
+  email:         'mail',
+  meeting:       'groups',
+  candidate:     'person_search',
+  client:        'business',
+  job:           'work',
+  cv_generated:  'description',
+  file_uploaded: 'upload_file',
+  note:          'edit_note',
+  reminder:      'notifications',
+  task:          'task_alt',
+}
+
+// ── Status badge config ───────────────────────────────────────────────────────
+const STATUS_CFG: Record<ActivityStatus, { bg: string; text: string; dot: string; label: string }> = {
+  completed: { bg: 'bg-green-100',  text: 'text-green-700',  dot: 'bg-green-500',  label: 'Completed' },
+  pending:   { bg: 'bg-amber-100',  text: 'text-amber-700',  dot: 'bg-amber-500',  label: 'Pending'   },
+  info:      { bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500',   label: 'Info'      },
+  cancelled: { bg: 'bg-slate-100',  text: 'text-slate-500',  dot: 'bg-slate-400',  label: 'Cancelled' },
+}
+
+// ── Recruiter avatar ──────────────────────────────────────────────────────────
+const AVATAR_COLORS = [
+  'bg-blue-500', 'bg-purple-500', 'bg-emerald-500',
+  'bg-amber-500', 'bg-rose-500', 'bg-teal-500',
+]
+function RecruiterAvatar({ name }: { name: string }) {
+  const initials = name.split(' ').map((p) => p[0]).join('').slice(0, 2).toUpperCase()
+  const color = AVATAR_COLORS[name.split('').reduce((a, c) => a + c.charCodeAt(0), 0) % AVATAR_COLORS.length]
   return (
-    <span className="text-[11px] text-slate-500 font-medium whitespace-nowrap">
-      {STATUS_DOT[status]} {STATUS_LABEL_TEXT[status]}
+    <div className={`w-6 h-6 rounded-full ${color} flex items-center justify-center flex-shrink-0`}>
+      <span className="text-[9px] font-bold text-white">{initials}</span>
+    </div>
+  )
+}
+function shortName(name: string): string {
+  const parts = name.split(' ')
+  return parts.length < 2 ? name : `${parts[0][0]}. ${parts.slice(1).join(' ')}`
+}
+
+// ── Quick filter chips ────────────────────────────────────────────────────────
+const QUICK_CHIPS: { label: string; type: ActivityType | ''; icon: string }[] = [
+  { label: 'All',      type: '',              icon: 'apps'          },
+  { label: 'Call',     type: 'call',          icon: 'call'          },
+  { label: 'Email',    type: 'email',         icon: 'mail'          },
+  { label: 'Meeting',  type: 'meeting',       icon: 'groups'        },
+  { label: 'Note',     type: 'note',          icon: 'edit_note'     },
+  { label: 'Reminder', type: 'reminder',      icon: 'notifications' },
+  { label: 'CV',       type: 'cv_generated',  icon: 'description'   },
+  { label: 'File',     type: 'file_uploaded', icon: 'upload_file'   },
+]
+
+// ── Status Badge (filled rounded) ─────────────────────────────────────────────
+function StatusBadge({ status }: { status: ActivityStatus }) {
+  const cfg = STATUS_CFG[status]
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 ${cfg.bg} ${cfg.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+      {cfg.label}
     </span>
   )
 }
 
-// ── Type Chip ───────────────────────────────────────────────────────────────────
+// ── Type Chip ─────────────────────────────────────────────────────────────────
 function TypeChip({ type }: { type: ActivityType }) {
   return (
     <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${ACTIVITY_COLORS[type]}`}>
@@ -57,7 +133,7 @@ function TypeChip({ type }: { type: ActivityType }) {
   )
 }
 
-// ── Activity Drawer ──────────────────────────────────────────────────────────────
+// ── Activity Drawer ───────────────────────────────────────────────────────────
 function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void }) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -72,11 +148,10 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="absolute inset-0 bg-black/20" />
       <div ref={ref} className="relative w-[420px] bg-white h-full shadow-2xl flex flex-col overflow-hidden">
-        {/* Header */}
         <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg ${ACTIVITY_COLORS[item.type]}`}>
-              {ACTIVITY_EMOJI[item.type]}
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${TYPE_BG[item.type]}`}>
+              <span className={`material-symbols-outlined ${TYPE_ICON_COLOR[item.type]}`} style={{ fontSize: '20px' }}>{TYPE_ICON[item.type]}</span>
             </div>
             <div className="min-w-0">
               <p className="text-sm font-bold text-slate-800 leading-tight truncate">{item.title}</p>
@@ -90,15 +165,12 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
           </button>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* Badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <TypeChip type={item.type} />
-            <StatusLabel status={item.status} />
+            <StatusBadge status={item.status} />
           </div>
 
-          {/* Entities */}
           <div className="grid grid-cols-2 gap-3">
             {item.clientName && (
               <div className="bg-slate-50 rounded-lg p-3">
@@ -120,17 +192,18 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
             )}
             <div className="bg-slate-50 rounded-lg p-3">
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Recruiter</p>
-              <p className="text-xs font-semibold text-slate-700">{item.recruiterName}</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <RecruiterAvatar name={item.recruiterName} />
+                <p className="text-xs font-semibold text-slate-700">{item.recruiterName}</p>
+              </div>
             </div>
           </div>
 
-          {/* Summary */}
           <div>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Summary</p>
             <p className="text-sm text-slate-700 leading-relaxed">{item.summary}</p>
           </div>
 
-          {/* Notes */}
           {item.notes && (
             <div>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Notes</p>
@@ -138,7 +211,6 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
             </div>
           )}
 
-          {/* Next Action */}
           {item.nextAction && (
             <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
               <p className="text-[10px] font-bold text-primary uppercase tracking-wider mb-1">Next Action</p>
@@ -146,7 +218,6 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
             </div>
           )}
 
-          {/* Attachments */}
           {item.attachments && item.attachments.length > 0 && (
             <div>
               <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Attachments</p>
@@ -166,55 +237,78 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
   )
 }
 
-// ── Feed Activity Item ───────────────────────────────────────────────────────────
-function ActivityItem({ item, onView }: { item: Activity; onView: () => void }) {
+// ── Activity Row (72px, large icon) ───────────────────────────────────────────
+function ActivityRow({ item, onView, isLast }: { item: Activity; onView: () => void; isLast: boolean }) {
   const context = [item.clientName, item.jobTitle, item.candidateName].filter(Boolean).join(' · ')
   return (
     <div
-      className="group flex items-start gap-3 px-4 py-2.5 hover:bg-slate-50 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
+      className={`group flex items-center gap-4 px-4 hover:bg-slate-50 transition-all cursor-pointer ${!isLast ? 'border-b border-slate-50' : ''}`}
+      style={{ minHeight: '72px', paddingTop: '14px', paddingBottom: '14px' }}
       onClick={onView}
     >
-      {/* Icon */}
-      <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 text-xs mt-0.5 ${ACTIVITY_COLORS[item.type]}`}>
-        {ACTIVITY_EMOJI[item.type]}
+      {/* Icon — 44px soft colored square */}
+      <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${TYPE_BG[item.type]} transition-transform group-hover:scale-105`}>
+        <span className={`material-symbols-outlined ${TYPE_ICON_COLOR[item.type]}`} style={{ fontSize: '22px' }}>{TYPE_ICON[item.type]}</span>
       </div>
 
-      {/* Content */}
+      {/* Title + context */}
       <div className="flex-1 min-w-0">
-        {/* Line 1: title · time · status */}
-        <div className="flex items-center gap-2 min-w-0">
-          <p className="text-[13px] font-semibold text-slate-800 leading-snug truncate">{item.title}</p>
-          <span className="text-slate-300 flex-shrink-0">·</span>
-          <span className="text-[11px] text-slate-400 tabular-nums flex-shrink-0">{fmtTime(item.timestamp)}</span>
-          <span className="text-slate-200 flex-shrink-0">·</span>
-          <StatusLabel status={item.status} />
-        </div>
-        {/* Line 2: context */}
-        {context && (
-          <p className="text-[11px] text-slate-400 mt-0.5 truncate">{context}</p>
-        )}
+        <p className="text-[15px] font-semibold text-slate-800 leading-snug truncate">{item.title}</p>
+        {context && <p className="text-[12px] text-slate-400 mt-0.5 truncate">{context}</p>}
+      </div>
+
+      {/* Status badge */}
+      <StatusBadge status={item.status} />
+
+      {/* Time */}
+      <div className="text-right flex-shrink-0 w-14">
+        <p className="text-[13px] font-medium text-slate-500 tabular-nums">{fmtTime(item.timestamp)}</p>
       </div>
 
       {/* Recruiter */}
-      <div className="flex-shrink-0 flex items-center gap-3 mt-0.5">
-        <span className="text-[11px] text-slate-400 whitespace-nowrap">{item.recruiterName}</span>
-        <span className="material-symbols-outlined text-slate-200 group-hover:text-slate-400 transition-colors" style={{ fontSize: '14px' }}>chevron_right</span>
+      <div className="hidden md:flex items-center gap-2 flex-shrink-0 w-32">
+        <RecruiterAvatar name={item.recruiterName} />
+        <span className="text-[12px] text-slate-500 truncate">{shortName(item.recruiterName)}</span>
       </div>
+
+      {/* More — hover only */}
+      <button
+        className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 opacity-0 group-hover:opacity-100 hover:bg-slate-200 hover:text-slate-600 transition-all"
+        onClick={(e) => { e.stopPropagation(); onView() }}
+        title="View details"
+      >
+        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
+      </button>
     </div>
   )
 }
 
-// ── Date Separator ───────────────────────────────────────────────────────────────
-function DateSeparator({ label, count }: { label: string; count: number }) {
+// ── Day Card (collapsible) ────────────────────────────────────────────────────
+function DayCard({ label, count, items, onView }: { label: string; count: number; items: Activity[]; onView: (a: Activity) => void }) {
+  const [open, setOpen] = useState(true)
   return (
-    <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 border-b border-slate-100 sticky top-0 z-10">
-      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</span>
-      <span className="text-[10px] text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded-full font-medium tabular-nums">{count}</span>
+    <div className="bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-slate-800">{label}</span>
+          <span className="min-w-[22px] h-5 px-1.5 inline-flex items-center justify-center text-[11px] font-bold text-slate-400 bg-slate-100 rounded-full">{count}</span>
+        </div>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-0.5 text-[12px] font-medium text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          {open ? 'Collapse' : 'Expand'}
+          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{open ? 'expand_less' : 'expand_more'}</span>
+        </button>
+      </div>
+      {open && items.map((item, i) => (
+        <ActivityRow key={item.id} item={item} onView={() => onView(item)} isLast={i === items.length - 1} />
+      ))}
     </div>
   )
 }
 
-// ── Table View ───────────────────────────────────────────────────────────────────
+// ── Table View ────────────────────────────────────────────────────────────────
 function TableView({ items, onView }: { items: Activity[]; onView: (a: Activity) => void }) {
   const cols = ['Time', 'Type', 'Client', 'Candidate', 'Job', 'Recruiter', 'Status', '']
   return (
@@ -232,17 +326,22 @@ function TableView({ items, onView }: { items: Activity[]; onView: (a: Activity)
         <tbody>
           {items.map((item) => (
             <tr key={item.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors group">
-              <td className="px-4 py-2.5 text-slate-400 tabular-nums whitespace-nowrap">
-                <div className="text-[11px]">{fmtTime(item.timestamp)}</div>
+              <td className="px-4 py-3 text-slate-400 tabular-nums whitespace-nowrap">
+                <div className="text-[11px] font-medium">{fmtTime(item.timestamp)}</div>
                 <div className="text-[10px] text-slate-300">{new Date(item.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</div>
               </td>
-              <td className="px-4 py-2.5"><TypeChip type={item.type} /></td>
-              <td className="px-4 py-2.5 text-slate-600 max-w-[120px] truncate">{item.clientName ?? '—'}</td>
-              <td className="px-4 py-2.5 text-slate-600 max-w-[120px] truncate">{item.candidateName ?? '—'}</td>
-              <td className="px-4 py-2.5 text-slate-600 max-w-[140px] truncate">{item.jobTitle ?? '—'}</td>
-              <td className="px-4 py-2.5 text-slate-500 whitespace-nowrap">{item.recruiterName}</td>
-              <td className="px-4 py-2.5"><StatusLabel status={item.status} /></td>
-              <td className="px-4 py-2.5">
+              <td className="px-4 py-3"><TypeChip type={item.type} /></td>
+              <td className="px-4 py-3 text-slate-600 max-w-[120px] truncate">{item.clientName ?? '—'}</td>
+              <td className="px-4 py-3 text-slate-600 max-w-[120px] truncate">{item.candidateName ?? '—'}</td>
+              <td className="px-4 py-3 text-slate-600 max-w-[140px] truncate">{item.jobTitle ?? '—'}</td>
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-1.5">
+                  <RecruiterAvatar name={item.recruiterName} />
+                  <span className="text-slate-500 whitespace-nowrap">{item.recruiterName}</span>
+                </div>
+              </td>
+              <td className="px-4 py-3"><StatusBadge status={item.status} /></td>
+              <td className="px-4 py-3">
                 <button
                   onClick={() => onView(item)}
                   className="text-[11px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
@@ -258,7 +357,7 @@ function TableView({ items, onView }: { items: Activity[]; onView: (a: Activity)
   )
 }
 
-// ── Empty State ──────────────────────────────────────────────────────────────────
+// ── Empty State ───────────────────────────────────────────────────────────────
 function EmptyState({ onClear }: { onClear: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 px-6 text-center">
@@ -270,27 +369,27 @@ function EmptyState({ onClear }: { onClear: () => void }) {
   )
 }
 
-// ── Log Activity Modal ───────────────────────────────────────────────────────────
+// ── Log Activity Modal ────────────────────────────────────────────────────────
 const BLANK_FORM = {
-  type:          'call' as ActivityType,
-  title:         '',
-  clientId:      '',
-  candidateId:   '',
-  jobId:         '',
-  recruiterId:   'r1',
-  summary:       '',
-  nextAction:    '',
-  status:        'completed' as ActivityStatus,
+  type:        'call' as ActivityType,
+  title:       '',
+  clientId:    '',
+  candidateId: '',
+  jobId:       '',
+  recruiterId: 'r1',
+  summary:     '',
+  nextAction:  '',
+  status:      'completed' as ActivityStatus,
 }
 
 function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activity) => void }) {
   const [form, setForm] = useState({ ...BLANK_FORM })
-  const [err, setErr] = useState<Record<string, string>>({})
+  const [err,  setErr]  = useState<Record<string, string>>({})
 
   function set(k: string, v: string) { setForm((f) => ({ ...f, [k]: v })); setErr((e) => { const n = { ...e }; delete n[k]; return n }) }
 
-  const filteredJobs = form.clientId ? jobs.filter((j) => j.clientId === form.clientId) : jobs
-  const filteredCandidates = form.jobId ? candidates.filter((c) => c.jobId === form.jobId) : candidates
+  const filteredJobs       = form.clientId ? jobs.filter((j) => j.clientId === form.clientId)  : jobs
+  const filteredCandidates = form.jobId    ? candidates.filter((c) => c.jobId === form.jobId)  : candidates
 
   const selectedClient    = clients.find((c) => c.id === form.clientId)
   const selectedJob       = jobs.find((j) => j.id === form.jobId)
@@ -300,27 +399,27 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
   function submit(e: React.FormEvent) {
     e.preventDefault()
     const errs: Record<string, string> = {}
-    if (!form.title.trim())   errs.title = 'Title is required'
+    if (!form.title.trim())   errs.title   = 'Title is required'
     if (!form.summary.trim()) errs.summary = 'Summary is required'
     if (Object.keys(errs).length) { setErr(errs); return }
 
     const now = new Date().toISOString()
     const a: Activity = {
-      id:             `a-local-${Date.now()}`,
-      type:           form.type,
-      title:          form.title.trim(),
-      timestamp:      now,
-      clientId:       form.clientId || undefined,
-      clientName:     selectedClient?.companyName,
-      candidateId:    form.candidateId || undefined,
-      candidateName:  selectedCandidate?.name,
-      jobId:          form.jobId || undefined,
-      jobTitle:       selectedJob?.title,
-      recruiterId:    form.recruiterId,
-      recruiterName:  selectedRecruiter?.name ?? '',
-      summary:        form.summary.trim(),
-      nextAction:     form.nextAction.trim() || undefined,
-      status:         form.status,
+      id:            `a-local-${Date.now()}`,
+      type:          form.type,
+      title:         form.title.trim(),
+      timestamp:     now,
+      clientId:      form.clientId || undefined,
+      clientName:    selectedClient?.companyName,
+      candidateId:   form.candidateId || undefined,
+      candidateName: selectedCandidate?.name,
+      jobId:         form.jobId || undefined,
+      jobTitle:      selectedJob?.title,
+      recruiterId:   form.recruiterId,
+      recruiterName: selectedRecruiter?.name ?? '',
+      summary:       form.summary.trim(),
+      nextAction:    form.nextAction.trim() || undefined,
+      status:        form.status,
     }
     onSave(a)
     onClose()
@@ -341,7 +440,6 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
         </div>
 
         <form onSubmit={submit} className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          {/* Type */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2 block">Activity Type</label>
             <div className="flex flex-wrap gap-1.5">
@@ -354,7 +452,6 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
             </div>
           </div>
 
-          {/* Title */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Title <span className="text-red-400">*</span></label>
             <input value={form.title} onChange={(e) => set('title', e.target.value)} placeholder="Brief activity title…"
@@ -362,7 +459,6 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
             {err.title && <p className="text-xs text-red-500 mt-1">{err.title}</p>}
           </div>
 
-          {/* Entities */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Client</label>
@@ -397,7 +493,6 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
             </div>
           </div>
 
-          {/* Status */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Status</label>
             <div className="flex gap-2">
@@ -410,7 +505,6 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
             </div>
           </div>
 
-          {/* Summary */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Summary <span className="text-red-400">*</span></label>
             <textarea rows={3} value={form.summary} onChange={(e) => set('summary', e.target.value)}
@@ -419,7 +513,6 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
             {err.summary && <p className="text-xs text-red-500 mt-1">{err.summary}</p>}
           </div>
 
-          {/* Next Action */}
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Next Action <span className="text-slate-300 font-normal normal-case">(optional)</span></label>
             <input value={form.nextAction} onChange={(e) => set('nextAction', e.target.value)}
@@ -441,22 +534,22 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
   )
 }
 
-// ── All available filter options ─────────────────────────────────────────────────
-const ALL_TYPES   = Object.keys(ACTIVITY_LABELS) as ActivityType[]
+// ── Filter option lists ───────────────────────────────────────────────────────
+const ALL_TYPES      = Object.keys(ACTIVITY_LABELS) as ActivityType[]
 const ALL_STATUSES: ActivityStatus[] = ['completed', 'pending', 'info', 'cancelled']
 const ALL_RECRUITERS = recruiters.map((r) => r.name)
 
-// ── Main Page ────────────────────────────────────────────────────────────────────
+// ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ActivityLogPage() {
-  const [local, setLocal] = useState<Activity[]>(loadLocal)
-  const [search,      setSearch]      = useState('')
-  const [typeFilter,  setTypeFilter]  = useState<ActivityType | ''>('')
-  const [clientFilter, setClientFilter] = useState('')
+  const [local,           setLocal]           = useState<Activity[]>(loadLocal)
+  const [search,          setSearch]          = useState('')
+  const [typeFilter,      setTypeFilter]      = useState<ActivityType | ''>('')
+  const [clientFilter,    setClientFilter]    = useState('')
   const [recruiterFilter, setRecruiterFilter] = useState('')
-  const [statusFilter, setStatusFilter] = useState<ActivityStatus | ''>('')
-  const [viewMode,    setViewMode]    = useState<'feed' | 'table'>('feed')
-  const [drawerItem,  setDrawerItem]  = useState<Activity | null>(null)
-  const [showModal,   setShowModal]   = useState(false)
+  const [statusFilter,    setStatusFilter]    = useState<ActivityStatus | ''>('')
+  const [viewMode,        setViewMode]        = useState<'feed' | 'table'>('feed')
+  const [drawerItem,      setDrawerItem]      = useState<Activity | null>(null)
+  const [showModal,       setShowModal]       = useState(false)
 
   useEffect(() => { saveLocal(local) }, [local])
 
@@ -468,18 +561,17 @@ export default function ActivityLogPage() {
   const filtered = useMemo(() => allActivities.filter((a) => {
     const q = search.toLowerCase()
     if (q && !a.title.toLowerCase().includes(q) && !a.summary.toLowerCase().includes(q)
-         && !(a.clientName ?? '').toLowerCase().includes(q)
+         && !(a.clientName    ?? '').toLowerCase().includes(q)
          && !(a.candidateName ?? '').toLowerCase().includes(q)
-         && !(a.jobTitle ?? '').toLowerCase().includes(q)
+         && !(a.jobTitle      ?? '').toLowerCase().includes(q)
          && !a.recruiterName.toLowerCase().includes(q)) return false
-    if (typeFilter     && a.type !== typeFilter)                     return false
-    if (clientFilter   && a.clientId !== clientFilter)               return false
-    if (recruiterFilter && a.recruiterName !== recruiterFilter)      return false
-    if (statusFilter   && a.status !== statusFilter)                 return false
+    if (typeFilter      && a.type          !== typeFilter)      return false
+    if (clientFilter    && a.clientId      !== clientFilter)    return false
+    if (recruiterFilter && a.recruiterName !== recruiterFilter) return false
+    if (statusFilter    && a.status        !== statusFilter)    return false
     return true
   }), [allActivities, search, typeFilter, clientFilter, recruiterFilter, statusFilter])
 
-  // Group by date for feed view
   const groups = useMemo(() => {
     const map = new Map<string, Activity[]>()
     filtered.forEach((a) => {
@@ -503,25 +595,28 @@ export default function ActivityLogPage() {
       [a.timestamp, ACTIVITY_LABELS[a.type], `"${a.title}"`, a.clientName ?? '', a.candidateName ?? '', a.jobTitle ?? '', a.recruiterName, a.status].join(',')
     ).join('\n')
     const blob = new Blob([header + rows], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
+    const url  = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url; link.download = 'activity_logs.csv'; link.click()
     URL.revokeObjectURL(url)
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden">
+    <div className="flex h-screen bg-slate-100 overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
-        {/* ── Page Header ─────────────────────────────────────────────────── */}
+        {/* ── Header ──────────────────────────────────────────────────────── */}
         <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between flex-shrink-0">
-          <h1 className="text-[15px] font-bold text-slate-900">Activity Logs</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-[15px] font-bold text-slate-900">Activity Logs</h1>
+            <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-medium tabular-nums">{allActivities.length}</span>
+          </div>
           <div className="flex items-center gap-2">
             <button onClick={exportCSV}
               className="flex items-center gap-1.5 text-xs font-medium text-slate-600 border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-colors">
               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>download</span>
-              Export CSV
+              Export
             </button>
             <button onClick={() => setShowModal(true)}
               className="flex items-center gap-1.5 bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
@@ -533,19 +628,12 @@ export default function ActivityLogPage() {
 
         {/* ── Toolbar ─────────────────────────────────────────────────────── */}
         <div className="bg-white border-b border-slate-100 px-6 py-2.5 flex items-center gap-2 flex-shrink-0">
-          {/* Search — wide */}
-          <div className="relative flex-1 min-w-0 max-w-sm">
+          <div className="relative flex-1 max-w-sm">
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '14px' }}>search</span>
             <input type="text" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search activities…"
               className="w-full pl-8 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 bg-white" />
           </div>
-
-          <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as ActivityType | '')}
-            className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
-            <option value="">Type</option>
-            {ALL_TYPES.map((t) => <option key={t} value={t}>{ACTIVITY_EMOJI[t]} {ACTIVITY_LABELS[t]}</option>)}
-          </select>
 
           <select value={clientFilter} onChange={(e) => setClientFilter(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
@@ -562,7 +650,7 @@ export default function ActivityLogPage() {
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as ActivityStatus | '')}
             className="text-sm border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-600 focus:outline-none focus:ring-2 focus:ring-primary/30">
             <option value="">Status</option>
-            {ALL_STATUSES.map((s) => <option key={s} value={s}>{STATUS_DOT[s]} {STATUS_LABEL_TEXT[s]}</option>)}
+            {ALL_STATUSES.map((s) => <option key={s} value={s}>{STATUS_CFG[s].label}</option>)}
           </select>
 
           {hasFilters && (
@@ -573,7 +661,7 @@ export default function ActivityLogPage() {
           )}
 
           <div className="ml-auto flex items-center gap-3 flex-shrink-0">
-            <span className="text-xs text-slate-400">{filtered.length} activities</span>
+            <span className="text-xs text-slate-400 tabular-nums">{filtered.length} activities</span>
             <div className="flex bg-slate-100 rounded-lg p-0.5">
               <button onClick={() => setViewMode('feed')}
                 className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${viewMode === 'feed' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>
@@ -589,33 +677,67 @@ export default function ActivityLogPage() {
           </div>
         </div>
 
+        {/* ── Quick type chips ─────────────────────────────────────────────── */}
+        <div className="bg-white border-b border-slate-100 px-6 py-2 flex items-center gap-1.5 flex-shrink-0 overflow-x-auto">
+          {QUICK_CHIPS.map((chip) => {
+            const active = typeFilter === chip.type
+            return (
+              <button
+                key={chip.label}
+                onClick={() => setTypeFilter(chip.type)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold whitespace-nowrap transition-all border ${
+                  active
+                    ? 'bg-primary text-white border-primary shadow-sm'
+                    : 'bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{chip.icon}</span>
+                {chip.label}
+              </button>
+            )
+          })}
+
+          {/* Overflow: candidate / client / job / task types */}
+          <select
+            value={!QUICK_CHIPS.find((c) => c.type === typeFilter) && typeFilter ? typeFilter : ''}
+            onChange={(e) => setTypeFilter(e.target.value as ActivityType | '')}
+            className="ml-auto text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/30 flex-shrink-0"
+          >
+            <option value="">More…</option>
+            {ALL_TYPES.filter((t) => !QUICK_CHIPS.find((c) => c.type === t)).map((t) => (
+              <option key={t} value={t}>{ACTIVITY_EMOJI[t]} {ACTIVITY_LABELS[t]}</option>
+            ))}
+          </select>
+        </div>
+
         {/* ── Content ─────────────────────────────────────────────────────── */}
         <div className="flex-1 overflow-y-auto">
           {filtered.length === 0 ? (
             <EmptyState onClear={clearFilters} />
           ) : viewMode === 'feed' ? (
-            <div className="bg-white border-b border-slate-100">
+            <div className="p-4 space-y-3">
               {groups.map(([key, items]) => (
-                <div key={key}>
-                  <DateSeparator label={dateLabel(items[0].timestamp)} count={items.length} />
-                  {items.map((item) => (
-                    <ActivityItem key={item.id} item={item} onView={() => setDrawerItem(item)} />
-                  ))}
-                </div>
+                <DayCard
+                  key={key}
+                  label={dateLabel(items[0].timestamp)}
+                  count={items.length}
+                  items={items}
+                  onView={setDrawerItem}
+                />
               ))}
             </div>
           ) : (
-            <div className="bg-white">
-              <TableView items={filtered} onView={setDrawerItem} />
+            <div className="p-4">
+              <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                <TableView items={filtered} onView={setDrawerItem} />
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Drawer */}
       {drawerItem && <ActivityDrawer item={drawerItem} onClose={() => setDrawerItem(null)} />}
 
-      {/* Log Modal */}
       {showModal && (
         <LogModal
           onClose={() => setShowModal(false)}
