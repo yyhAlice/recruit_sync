@@ -79,7 +79,11 @@ const STATUS_CFG: Record<ActivityStatus, { bg: string; text: string; dot: string
   pending:   { bg: 'bg-amber-100',  text: 'text-amber-700',  dot: 'bg-amber-500',  label: 'Pending'   },
   info:      { bg: 'bg-blue-100',   text: 'text-blue-700',   dot: 'bg-blue-500',   label: 'Info'      },
   cancelled: { bg: 'bg-slate-100',  text: 'text-slate-500',  dot: 'bg-slate-400',  label: 'Cancelled' },
+  failed:    { bg: 'bg-rose-100',   text: 'text-rose-700',   dot: 'bg-rose-500',   label: 'Failed'    },
 }
+
+// Statuses available in the editable dropdown (excludes system-only 'info')
+const EDITABLE_STATUSES: ActivityStatus[] = ['pending', 'completed', 'cancelled', 'failed']
 
 // ── Recruiter avatar ──────────────────────────────────────────────────────────
 const AVATAR_COLORS = [
@@ -112,7 +116,7 @@ const QUICK_CHIPS: { label: string; type: ActivityType | ''; icon: string }[] = 
   { label: 'File',     type: 'file_uploaded', icon: 'upload_file'   },
 ]
 
-// ── Status Badge (filled rounded) ─────────────────────────────────────────────
+// ── Status Badge (read-only, used in feed rows + table) ──────────────────────
 function StatusBadge({ status }: { status: ActivityStatus }) {
   const cfg = STATUS_CFG[status]
   return (
@@ -120,6 +124,70 @@ function StatusBadge({ status }: { status: ActivityStatus }) {
       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
       {cfg.label}
     </span>
+  )
+}
+
+// ── Editable Status Badge (used in drawer) ────────────────────────────────────
+function EditableStatusBadge({ status, onChange }: { status: ActivityStatus; onChange: (s: ActivityStatus) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function h(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [open])
+
+  const cfg = STATUS_CFG[status]
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full border border-transparent hover:border-current/20 transition-all cursor-pointer select-none ${cfg.bg} ${cfg.text}`}
+        title="Click to change status"
+      >
+        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+        {cfg.label}
+        <span className="material-symbols-outlined" style={{ fontSize: '12px', lineHeight: 1 }}>expand_more</span>
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1.5 bg-white rounded-xl border border-slate-200 shadow-xl z-20 py-1 min-w-[150px]">
+          {EDITABLE_STATUSES.map((s) => {
+            const c = STATUS_CFG[s]
+            const active = status === s
+            return (
+              <button
+                key={s}
+                onClick={() => { onChange(s); setOpen(false) }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold transition-colors hover:bg-slate-50 ${active ? 'text-slate-900' : 'text-slate-600'}`}
+              >
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${c.dot}`} />
+                {c.label}
+                {active && <span className="material-symbols-outlined ml-auto text-primary" style={{ fontSize: '13px' }}>check</span>}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Toast notification ────────────────────────────────────────────────────────
+function Toast({ message, onDone }: { message: string; onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3000)
+    return () => clearTimeout(t)
+  }, [onDone])
+  return (
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-2.5 bg-slate-800 text-white text-sm font-medium px-4 py-2.5 rounded-xl shadow-2xl pointer-events-none">
+      <span className="material-symbols-outlined text-green-400" style={{ fontSize: '16px' }}>check_circle</span>
+      {message}
+    </div>
   )
 }
 
@@ -134,7 +202,14 @@ function TypeChip({ type }: { type: ActivityType }) {
 }
 
 // ── Activity Drawer ───────────────────────────────────────────────────────────
-function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void }) {
+function ActivityDrawer({
+  item, onClose, onStatusChange, onMarkComplete,
+}: {
+  item: Activity
+  onClose: () => void
+  onStatusChange: (id: string, status: ActivityStatus) => void
+  onMarkComplete: (id: string) => void
+}) {
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     function h(e: MouseEvent) {
@@ -168,7 +243,10 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div className="flex items-center gap-2 flex-wrap">
             <TypeChip type={item.type} />
-            <StatusBadge status={item.status} />
+            <EditableStatusBadge
+              status={item.status}
+              onChange={(s) => onStatusChange(item.id, s)}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -203,6 +281,16 @@ function ActivityDrawer({ item, onClose }: { item: Activity; onClose: () => void
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Summary</p>
             <p className="text-sm text-slate-700 leading-relaxed">{item.summary}</p>
           </div>
+
+          {item.status === 'pending' && (
+            <button
+              onClick={() => onMarkComplete(item.id)}
+              className="w-full flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-primary-dark active:scale-[0.98] transition-all"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>check_circle</span>
+              Mark as Completed
+            </button>
+          )}
 
           {item.notes && (
             <div>
@@ -496,7 +584,7 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
           <div>
             <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 block">Status</label>
             <div className="flex gap-2">
-              {(['completed', 'pending', 'info', 'cancelled'] as ActivityStatus[]).map((s) => (
+              {(['completed', 'pending', 'cancelled', 'failed'] as ActivityStatus[]).map((s) => (
                 <button key={s} type="button" onClick={() => set('status', s)}
                   className={`flex-1 py-1.5 rounded-lg text-xs font-semibold border capitalize transition-colors ${form.status === s ? STATUS_COLORS[s] : 'border-slate-200 text-slate-400 hover:bg-slate-50'}`}>
                   {s}
@@ -536,12 +624,18 @@ function LogModal({ onClose, onSave }: { onClose: () => void; onSave: (a: Activi
 
 // ── Filter option lists ───────────────────────────────────────────────────────
 const ALL_TYPES      = Object.keys(ACTIVITY_LABELS) as ActivityType[]
-const ALL_STATUSES: ActivityStatus[] = ['completed', 'pending', 'info', 'cancelled']
+const ALL_STATUSES: ActivityStatus[] = ['completed', 'pending', 'info', 'cancelled', 'failed']
 const ALL_RECRUITERS = recruiters.map((r) => r.name)
+
+const LS_OVERRIDES_KEY = 'rs_activity_status_overrides'
+function loadOverrides(): Record<string, ActivityStatus> {
+  try { return JSON.parse(localStorage.getItem(LS_OVERRIDES_KEY) ?? '{}') } catch { return {} }
+}
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function ActivityLogPage() {
   const [local,           setLocal]           = useState<Activity[]>(loadLocal)
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, ActivityStatus>>(loadOverrides)
   const [search,          setSearch]          = useState('')
   const [typeFilter,      setTypeFilter]      = useState<ActivityType | ''>('')
   const [clientFilter,    setClientFilter]    = useState('')
@@ -550,13 +644,30 @@ export default function ActivityLogPage() {
   const [viewMode,        setViewMode]        = useState<'feed' | 'table'>('feed')
   const [drawerItem,      setDrawerItem]      = useState<Activity | null>(null)
   const [showModal,       setShowModal]       = useState(false)
+  const [toast,           setToast]           = useState<string | null>(null)
 
   useEffect(() => { saveLocal(local) }, [local])
+  useEffect(() => {
+    localStorage.setItem(LS_OVERRIDES_KEY, JSON.stringify(statusOverrides))
+  }, [statusOverrides])
 
   const allActivities = useMemo(
-    () => [...local, ...initialActivities].sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
-    [local]
+    () => [...local, ...initialActivities]
+      .map((a) => statusOverrides[a.id] ? { ...a, status: statusOverrides[a.id] } : a)
+      .sort((a, b) => b.timestamp.localeCompare(a.timestamp)),
+    [local, statusOverrides]
   )
+
+  function handleStatusChange(id: string, status: ActivityStatus) {
+    setStatusOverrides((prev) => ({ ...prev, [id]: status }))
+    setDrawerItem((prev) => prev?.id === id ? { ...prev, status } : prev)
+  }
+
+  function handleMarkComplete(id: string) {
+    handleStatusChange(id, 'completed')
+    setToast('Activity marked as completed')
+    setTimeout(() => setToast(null), 3000)
+  }
 
   const filtered = useMemo(() => allActivities.filter((a) => {
     const q = search.toLowerCase()
@@ -736,7 +847,16 @@ export default function ActivityLogPage() {
         </div>
       </div>
 
-      {drawerItem && <ActivityDrawer item={drawerItem} onClose={() => setDrawerItem(null)} />}
+      {drawerItem && (
+        <ActivityDrawer
+          item={drawerItem}
+          onClose={() => setDrawerItem(null)}
+          onStatusChange={handleStatusChange}
+          onMarkComplete={handleMarkComplete}
+        />
+      )}
+
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
 
       {showModal && (
         <LogModal

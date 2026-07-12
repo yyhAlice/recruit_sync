@@ -2,7 +2,7 @@ export type ActivityType =
   | 'call' | 'email' | 'meeting' | 'candidate' | 'client'
   | 'job' | 'cv_generated' | 'file_uploaded' | 'note' | 'reminder' | 'task'
 
-export type ActivityStatus = 'completed' | 'pending' | 'cancelled' | 'info'
+export type ActivityStatus = 'completed' | 'pending' | 'cancelled' | 'info' | 'failed'
 
 export interface Activity {
   id: string
@@ -71,6 +71,7 @@ export const STATUS_COLORS: Record<ActivityStatus, string> = {
   pending:   'bg-orange-50 text-orange-700 ring-1 ring-orange-200',
   cancelled: 'bg-red-50 text-red-700 ring-1 ring-red-200',
   info:      'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+  failed:    'bg-rose-50 text-rose-700 ring-1 ring-rose-200',
 }
 
 export const initialActivities: Activity[] = [
