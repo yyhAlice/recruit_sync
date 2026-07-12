@@ -76,8 +76,8 @@ const AVATAR_COLORS = [
 function PriorityBadge({ priority }: { priority: Priority }) {
   const cfg = PRIORITY_CFG[priority]
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap flex-shrink-0 ring-1 ${cfg.bg} ${cfg.text} ${cfg.ring}`}>
-      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.dot}`} />
+    <span className={`inline-flex items-center gap-1.5 text-[12px] font-medium whitespace-nowrap flex-shrink-0 ${cfg.text}`}>
+      <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
       {cfg.label}
     </span>
   )
@@ -128,25 +128,30 @@ function RecruiterAvatar({ name }: { name: string }) {
 
 // ── Stat Card ─────────────────────────────────────────────────────────────────
 interface StatCardProps {
-  emoji: string
+  icon: string
+  iconBg: string
+  iconColor: string
+  borderColor: string
   count: number
   label: string
   active: boolean
-  activeCls: string
+  countCls: string
   onClick: () => void
 }
-function StatCard({ emoji, count, label, active, activeCls, onClick }: StatCardProps) {
+function StatCard({ icon, iconBg, iconColor, borderColor, count, label, active, countCls, onClick }: StatCardProps) {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 min-w-0 bg-white rounded-xl px-4 py-4 text-left transition-all border shadow-sm cursor-pointer ${
+      className={`flex-1 min-w-0 bg-white rounded-xl px-4 py-3.5 text-left transition-all border shadow-sm cursor-pointer ${
         active
-          ? `shadow-md ${activeCls}`
+          ? `border-b-[3px] ${borderColor} shadow-md`
           : 'border-slate-100 hover:shadow-md hover:border-slate-200'
       }`}
     >
-      <span className="text-xl block mb-2">{emoji}</span>
-      <span className={`text-[26px] font-bold leading-none block mb-1 ${active ? '' : 'text-slate-800'}`}>{count}</span>
+      <span className={`w-7 h-7 rounded-lg flex items-center justify-center mb-2 ${iconBg}`}>
+        <span className={`material-symbols-outlined ${iconColor}`} style={{ fontSize: '15px' }}>{icon}</span>
+      </span>
+      <span className={`text-[26px] font-bold leading-none block mb-0.5 ${active ? countCls : 'text-slate-800'}`}>{count}</span>
       <span className="text-[12px] text-slate-400 font-medium block">{label}</span>
     </button>
   )
@@ -327,9 +332,7 @@ function ReminderSection({
           size={12}
           className={`text-slate-300 group-hover/sec:text-slate-400 transition-transform flex-shrink-0 ${!open ? '-rotate-90' : ''}`}
         />
-        <span className={`text-[11px] font-bold uppercase tracking-widest ${meta.labelCls}`}>{meta.label}</span>
-        <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full tabular-nums leading-none">{reminders.length}</span>
-        <div className="flex-1 h-px bg-slate-100 ml-1" />
+        <span className={`text-[11px] font-bold uppercase tracking-widest ${meta.labelCls}`}>{meta.label} ({reminders.length})</span>
       </button>
 
       {open && (
@@ -775,34 +778,34 @@ export default function RemindersPage() {
         {/* ── Stat Cards ────────────────────────────────────────────────── */}
         <div className="px-6 pt-4 pb-3 flex gap-3 flex-shrink-0">
           <StatCard
-            emoji="🔴" count={sectionCounts.overdue} label="Overdue"
-            active={tab === 'overdue'}
-            activeCls="border-red-200 bg-red-50/40 text-red-600"
-            onClick={() => toggleTab('overdue')}
+            icon="warning" iconBg="bg-red-100" iconColor="text-red-500"
+            borderColor="border-red-400" countCls="text-red-600"
+            count={sectionCounts.overdue} label="Overdue"
+            active={tab === 'overdue'} onClick={() => toggleTab('overdue')}
           />
           <StatCard
-            emoji="🟠" count={sectionCounts.today} label="Today"
-            active={tab === 'today'}
-            activeCls="border-amber-200 bg-amber-50/40 text-amber-600"
-            onClick={() => toggleTab('today')}
+            icon="today" iconBg="bg-amber-100" iconColor="text-amber-500"
+            borderColor="border-amber-400" countCls="text-amber-600"
+            count={sectionCounts.today} label="Today"
+            active={tab === 'today'} onClick={() => toggleTab('today')}
           />
           <StatCard
-            emoji="📅" count={sectionCounts.upcoming} label="Upcoming"
-            active={tab === 'upcoming'}
-            activeCls="border-blue-200 bg-blue-50/40 text-blue-600"
-            onClick={() => toggleTab('upcoming')}
+            icon="calendar_month" iconBg="bg-blue-100" iconColor="text-blue-500"
+            borderColor="border-blue-400" countCls="text-blue-600"
+            count={sectionCounts.upcoming} label="Upcoming"
+            active={tab === 'upcoming'} onClick={() => toggleTab('upcoming')}
           />
           <StatCard
-            emoji="✅" count={completed.length} label="Completed"
-            active={tab === 'completed'}
-            activeCls="border-green-200 bg-green-50/40 text-green-600"
-            onClick={() => toggleTab('completed')}
+            icon="check_circle" iconBg="bg-green-100" iconColor="text-green-600"
+            borderColor="border-green-400" countCls="text-green-600"
+            count={completed.length} label="Completed"
+            active={tab === 'completed'} onClick={() => toggleTab('completed')}
           />
           <StatCard
-            emoji="📊" count={reminders.length} label="Total"
-            active={tab === 'all'}
-            activeCls="border-slate-200 bg-slate-50 text-slate-600"
-            onClick={() => setTab('all')}
+            icon="notifications" iconBg="bg-slate-100" iconColor="text-slate-500"
+            borderColor="border-slate-400" countCls="text-slate-700"
+            count={reminders.length} label="Total"
+            active={tab === 'all'} onClick={() => setTab('all')}
           />
         </div>
 
