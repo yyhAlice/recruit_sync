@@ -44,19 +44,16 @@ export default function PipelineOverviewPage() {
   const [jobFilter, setJobFilter]         = useState<string>('all')
   const [recruiterFilter, setRecruiter]   = useState<string>('all')
 
-  // Jobs filtered by selected client
   const filteredJobs = useMemo(
     () => clientFilter === 'all' ? jobs : jobs.filter((j) => j.clientId === clientFilter),
     [clientFilter]
   )
 
-  // Reset job filter when client changes
   const handleClientChange = (val: string) => {
     setClientFilter(val)
     setJobFilter('all')
   }
 
-  // Final candidate list after all filters
   const filtered = useMemo(() => {
     return candidates.filter((c) => {
       if (clientFilter !== 'all') {
@@ -69,7 +66,6 @@ export default function PipelineOverviewPage() {
     })
   }, [clientFilter, jobFilter, recruiterFilter])
 
-  // Group by stage
   const grouped = useMemo(() => {
     const map: Record<PipelineStage, typeof filtered> = {
       sourced: [], screening: [], interview: [], offered: [], placed: [], rejected: [],

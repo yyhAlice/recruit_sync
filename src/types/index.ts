@@ -1,3 +1,5 @@
+import type { WorkExperience, Education, CVLanguage, Certification, OutputFormat, CVStatus } from './cv'
+
 export type PipelineStage = 'sourced' | 'screening' | 'interview' | 'offered' | 'placed' | 'rejected'
 export type JobStatus = 'active' | 'on-hold' | 'closed'
 export type EmploymentType = 'Full-time' | 'Contract' | 'Part-time'
@@ -46,6 +48,23 @@ export interface Candidate {
   lastActivityDate: string // ISO date, used for status dot
   nextReminderDate: string | null // ISO date
   reminderOverdue: boolean
+  photoUrl?: string
+  // CV-derived fields (optional — only populated for candidates added via CV upload)
+  phone?: string
+  address?: string
+  dateOfBirth?: string
+  currentJobTitle?: string
+  desiredRole?: string
+  availability?: string
+  workExperience?: WorkExperience[]
+  education?: Education[]
+  languages?: CVLanguage[]
+  certifications?: Certification[]
+  // Generated CV metadata (only populated for candidates created via the CV upload wizard)
+  cvTemplateName?: string
+  cvOutputFormat?: OutputFormat
+  cvGeneratedAt?: string
+  cvStatus?: CVStatus
 }
 
 export interface Recruiter {

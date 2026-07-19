@@ -1,8 +1,8 @@
 const STEPS = [
   { label: 'Upload',    path: '/cv/upload'    },
   { label: 'Review',   path: '/cv/review'    },
-  { label: 'Mapping',  path: '/cv/mapping'   },
   { label: 'Template', path: '/cv/templates' },
+  { label: 'Mapping',  path: '/cv/mapping'   },
   { label: 'Preview',  path: '/cv/preview'   },
 ]
 
@@ -18,7 +18,6 @@ export default function StepIndicator({ currentPath }: StepIndicatorProps) {
       {STEPS.map((step, i) => {
         const done    = i < currentIndex
         const active  = i === currentIndex
-        const future  = i > currentIndex
         return (
           <div key={step.path} className="flex items-center">
             <div className="flex items-center gap-2">

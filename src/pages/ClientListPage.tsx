@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import PageHeader from '../components/PageHeader'
-import StatusDot from '../components/StatusDot'
+import Pagination from '../components/Pagination'
 import { clients as baseClients, getActiveJobsCount } from '../data/mockData'
 import type { Client } from '../types'
 import { TODAY } from '../utils/format'
@@ -22,6 +22,8 @@ function daysAgo(dateStr: string): string {
   if (days === 1) return 'Yesterday'
   return `${days} days ago`
 }
+
+const PAGE_SIZE = 10
 
 const INDUSTRY_OPTIONS = ['Technology', 'Finance', 'Manufacturing', 'Trading']
 const industries = ['All Industries', ...INDUSTRY_OPTIONS]
@@ -122,6 +124,7 @@ export default function ClientListPage() {
   const [industry, setIndustry] = useState('All Industries')
   const [showModal, setShowModal] = useState(false)
   const [localClients, setLocalClients] = useState<Client[]>([])
+  const [page, setPage] = useState(1)
 
   const clients = [...baseClients, ...localClients]
 
@@ -132,6 +135,13 @@ export default function ClientListPage() {
     const matchIndustry = industry === 'All Industries' || c.industry === industry
     return matchSearch && matchIndustry
   })
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  function handleSearchChange(v: string) { setSearch(v); setPage(1) }
+  function handleIndustryChange(v: string) { setIndustry(v); setPage(1) }
 
   return (
     <>
@@ -160,13 +170,13 @@ export default function ClientListPage() {
               type="text"
               placeholder="Search clients..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
           </div>
           <select
             value={industry}
-            onChange={(e) => setIndustry(e.target.value)}
+            onChange={(e) => handleIndustryChange(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white text-slate-700"
           >
             {industries.map((ind) => (
@@ -190,7 +200,7 @@ export default function ClientListPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((client) => {
+                {paged.map((client) => {
                   const activeJobs = getActiveJobsCount(client.id)
                   const badgeClass = industryBadge[client.industry] ?? 'bg-slate-100 text-slate-600'
                   return (
@@ -199,10 +209,7 @@ export default function ClientListPage() {
                       className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
                     >
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-2.5">
-                          <StatusDot lastActivityDate={client.lastContactDate} />
-                          <span className="font-semibold text-slate-800 text-sm">{client.companyName}</span>
-                        </div>
+                        <span className="font-semibold text-slate-800 text-sm">{client.companyName}</span>
                       </td>
                       <td className="px-4 py-3.5 text-sm text-slate-600">{client.contactPerson}</td>
                       <td className="px-4 py-3.5">
@@ -239,10 +246,7 @@ export default function ClientListPage() {
             </table>
           </div>
 
-          {/* Summary footer */}
-          <div className="mt-4 text-xs text-slate-400 text-right">
-            Showing {filtered.length} of {clients.length} clients
-          </div>
+          <Pagination page={currentPage} pageSize={PAGE_SIZE} totalItems={filtered.length} onChange={setPage} />
         </div>
       </div>
     </div>

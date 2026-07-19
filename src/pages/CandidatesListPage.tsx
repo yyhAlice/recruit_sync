@@ -1,113 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import PageHeader from '../components/PageHeader'
-import StatusDot from '../components/StatusDot'
-import { candidates as baseCandidates, jobs, clients, recruiters, STAGE_LABELS } from '../data/mockData'
-import type { PipelineStage, Candidate } from '../types'
-import { TODAY } from '../utils/format'
-
-const BLANK_CANDIDATE = {
-  name: '', email: '', location: 'Tokyo', experienceYears: '3',
-  jobId: '', recruiterId: '', skills: '',
-}
-
-function AddCandidateModal({ onClose, onAdd }: { onClose: () => void; onAdd: (c: Candidate) => void }) {
-  const [form, setForm] = useState(BLANK_CANDIDATE)
-  const [error, setError] = useState('')
-  const overlayRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function handler(e: MouseEvent) { if (e.target === overlayRef.current) onClose() }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [onClose])
-
-  function submit() {
-    if (!form.name.trim()) { setError('Name is required'); return }
-    if (!form.jobId) { setError('Please select a job'); return }
-    if (!form.recruiterId) { setError('Please select a recruiter'); return }
-    const newCandidate: Candidate = {
-      id: `cand-new-${Date.now()}`,
-      jobId: form.jobId,
-      name: form.name,
-      email: form.email,
-      location: form.location,
-      experienceYears: Number(form.experienceYears) || 3,
-      skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
-      stage: 'sourced',
-      recruiterId: form.recruiterId,
-      appliedDate: TODAY,
-      lastActivityDate: TODAY,
-      nextReminderDate: null,
-      reminderOverdue: false,
-    }
-    onAdd(newCandidate)
-    onClose()
-  }
-
-  const set = (k: keyof typeof BLANK_CANDIDATE) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }))
-
-  return (
-    <div ref={overlayRef} className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h2 className="text-sm font-bold text-slate-800">Add Candidate</h2>
-          <button onClick={onClose} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100">
-            <span className="material-symbols-outlined text-slate-400" style={{ fontSize: '16px' }}>close</span>
-          </button>
-        </div>
-        <div className="p-5 space-y-3 max-h-[70vh] overflow-y-auto">
-          {error && <p className="text-xs text-red-500 font-medium bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Full Name *</label>
-              <input value={form.name} onChange={set('name')} placeholder="Yuki Tanaka" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Email</label>
-              <input value={form.email} onChange={set('email')} type="email" placeholder="yuki@email.com" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Location</label>
-              <input value={form.location} onChange={set('location')} placeholder="Tokyo" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Experience (years)</label>
-              <input value={form.experienceYears} onChange={set('experienceYears')} type="number" min="0" max="40" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Applying For *</label>
-              <select value={form.jobId} onChange={set('jobId')} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
-                <option value="">Select job…</option>
-                {jobs.filter((j) => j.status === 'active').map((j) => {
-                  const c = clients.find((cl) => cl.id === j.clientId)
-                  return <option key={j.id} value={j.id}>{j.title} — {c?.companyName}</option>
-                })}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Recruiter *</label>
-              <select value={form.recruiterId} onChange={set('recruiterId')} className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
-                <option value="">Select recruiter…</option>
-                {recruiters.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Skills (comma-separated)</label>
-              <input value={form.skills} onChange={set('skills')} placeholder="React, TypeScript, Node.js" className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary/30" />
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-slate-100 bg-slate-50">
-          <button onClick={onClose} className="text-sm font-medium text-slate-500 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">Cancel</button>
-          <button onClick={submit} className="text-sm font-semibold text-white bg-primary px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">Add Candidate</button>
-        </div>
-      </div>
-    </div>
-  )
-}
+import Pagination from '../components/Pagination'
+import { jobs, clients, recruiters, STAGE_LABELS } from '../data/mockData'
+import { useCandidateContext } from '../context/CandidateContext'
+import { useCVContext } from '../context/CVContext'
+import type { PipelineStage } from '../types'
+import { TODAY, initials } from '../utils/format'
 
 const stageBadge: Record<PipelineStage, string> = {
   sourced:   'bg-slate-100 text-slate-600',
@@ -118,6 +18,22 @@ const stageBadge: Record<PipelineStage, string> = {
   rejected:  'bg-red-100 text-red-600',
 }
 
+const AVATAR_COLORS = [
+  'bg-blue-100 text-blue-700',
+  'bg-purple-100 text-purple-700',
+  'bg-teal-100 text-teal-700',
+  'bg-amber-100 text-amber-700',
+  'bg-pink-100 text-pink-700',
+  'bg-green-100 text-green-700',
+  'bg-indigo-100 text-indigo-700',
+]
+
+function avatarColor(id: string) {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length]
+}
+
 function daysAgo(dateStr: string) {
   const d = Math.floor((new Date(TODAY).getTime() - new Date(dateStr).getTime()) / 86400000)
   if (d <= 0) return 'Today'
@@ -126,16 +42,16 @@ function daysAgo(dateStr: string) {
 }
 
 const allStages: (PipelineStage | 'all')[] = ['all', 'sourced', 'screening', 'interview', 'offered', 'placed', 'rejected']
+const PAGE_SIZE = 10
 
 export default function CandidatesListPage() {
   const navigate = useNavigate()
+  const { candidates: allCandidates } = useCandidateContext()
+  const { resetSession } = useCVContext()
   const [search, setSearch] = useState('')
   const [stage, setStage] = useState<PipelineStage | 'all'>('all')
   const [recruiterFilter, setRecruiterFilter] = useState('All')
-  const [showModal, setShowModal] = useState(false)
-  const [localCandidates, setLocalCandidates] = useState<Candidate[]>([])
-
-  const allCandidates = useMemo(() => [...baseCandidates, ...localCandidates], [localCandidates])
+  const [page, setPage] = useState(1)
 
   const enriched = useMemo(() => allCandidates.map((c) => {
     const job    = jobs.find((j) => j.id === c.jobId)
@@ -162,8 +78,15 @@ export default function CandidatesListPage() {
     return m
   }, [allCandidates])
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paged = useMemo(() => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE), [filtered, currentPage])
+
+  function handleSearchChange(v: string) { setSearch(v); setPage(1) }
+  function handleStageChange(s: PipelineStage | 'all') { setStage(s); setPage(1) }
+  function handleRecruiterChange(v: string) { setRecruiterFilter(v); setPage(1) }
+
   return (
-    <>
     <div className="flex h-screen bg-surface overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -171,7 +94,7 @@ export default function CandidatesListPage() {
           title="Candidates"
           subtitle={`${allCandidates.length} candidates across ${jobs.length} positions`}
           actions={
-            <button onClick={() => setShowModal(true)} className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
+            <button onClick={() => { resetSession(); navigate('/cv/upload') }} className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
               <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>add</span>
               Add Candidate
             </button>
@@ -183,7 +106,7 @@ export default function CandidatesListPage() {
           {allStages.map((s) => (
             <button
               key={s}
-              onClick={() => setStage(s)}
+              onClick={() => handleStageChange(s)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
                 stage === s ? 'bg-primary text-white' : 'text-slate-500 hover:bg-slate-100'
               }`}
@@ -202,12 +125,12 @@ export default function CandidatesListPage() {
             <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" style={{ fontSize: '16px' }}>search</span>
             <input
               type="text" placeholder="Search name, skill, location..."
-              value={search} onChange={(e) => setSearch(e.target.value)}
+              value={search} onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
           </div>
           <select
-            value={recruiterFilter} onChange={(e) => setRecruiterFilter(e.target.value)}
+            value={recruiterFilter} onChange={(e) => handleRecruiterChange(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             <option>All</option>
@@ -232,15 +155,20 @@ export default function CandidatesListPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((c) => (
+                {paged.map((c) => (
                   <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => navigate(`/candidates/${c.id}`)}>
                     <td className="px-5 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <StatusDot lastActivityDate={c.lastActivityDate} reminderOverdue={c.reminderOverdue} />
-                        <div>
-                          <div className="font-semibold text-slate-800">{c.name}</div>
-                          <div className="text-xs text-slate-400">{c.location} · {c.experienceYears}yr exp</div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          {c.photoUrl ? (
+                            <img src={c.photoUrl} alt={c.name} className="w-9 h-9 rounded-full object-cover" />
+                          ) : (
+                            <div className={`w-9 h-9 rounded-full flex items-center justify-center ${avatarColor(c.id)}`}>
+                              <span className="text-xs font-bold">{initials(c.name)}</span>
+                            </div>
+                          )}
                         </div>
+                        <div className="font-semibold text-slate-800">{c.name}</div>
                       </div>
                     </td>
                     <td className="px-4 py-3">
@@ -280,16 +208,9 @@ export default function CandidatesListPage() {
               </tbody>
             </table>
           </div>
-          <div className="mt-4 text-xs text-slate-400 text-right">Showing {filtered.length} of {allCandidates.length} candidates</div>
+          <Pagination page={currentPage} pageSize={PAGE_SIZE} totalItems={filtered.length} onChange={setPage} />
         </div>
       </div>
     </div>
-    {showModal && (
-      <AddCandidateModal
-        onClose={() => setShowModal(false)}
-        onAdd={(c) => setLocalCandidates((prev) => [c, ...prev])}
-      />
-    )}
-    </>
   )
 }

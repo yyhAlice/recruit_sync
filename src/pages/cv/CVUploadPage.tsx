@@ -234,9 +234,9 @@ export default function CVUploadPage() {
             </div>
 
             <div className="flex items-center justify-between pt-2">
-              <button onClick={() => navigate('/cv')} className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
+              <button onClick={() => navigate('/candidates')} className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_back</span>
-                Back to Dashboard
+                Back to Candidates
               </button>
               <button
                 onClick={handleSubmit}

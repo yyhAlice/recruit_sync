@@ -4,7 +4,10 @@ import Sidebar from '../../components/Sidebar'
 import PageHeader from '../../components/PageHeader'
 import StepIndicator from '../../components/cv/StepIndicator'
 import { useCVContext } from '../../context/CVContext'
-import { DESTINATION_OPTIONS } from '../../data/cvMockData'
+import { useCandidateContext } from '../../context/CandidateContext'
+import { cvTemplates } from '../../data/cvMockData'
+import { TODAY } from '../../utils/format'
+import type { Candidate } from '../../types'
 import type { FieldMapping } from '../../types/cv'
 
 function confidenceBadge(score: number) {
@@ -21,28 +24,85 @@ function confidenceLabel(score: number) {
 
 export default function CVMappingPage() {
   const navigate = useNavigate()
-  const { session, updateSession, simulateAutoMap } = useCVContext()
+  const { session, updateSession, addToHistory, simulateAutoMap } = useCVContext()
+  const { addCandidate } = useCandidateContext()
+
+  const template = cvTemplates.find((t) => t.id === session.selectedTemplateId) ?? cvTemplates[0]
 
   const [mappings, setMappings] = useState<FieldMapping[]>(
-    session.fieldMappings.length > 0 ? session.fieldMappings : simulateAutoMap()
+    session.fieldMappings.length > 0 ? session.fieldMappings : simulateAutoMap(template.placeholders)
   )
   const [filter, setFilter]           = useState<'all' | 'unmapped' | 'mapped'>('all')
   const [saveTemplate, setSaveTemplate] = useState(false)
   const [templateName, setTemplateName] = useState('')
   const [autoMatched, setAutoMatched]   = useState(session.fieldMappings.length > 0)
+  const [generating, setGenerating]     = useState(false)
 
   function updateDest(id: string, dest: string) {
     setMappings((ms) => ms.map((m) => m.id === id ? { ...m, destination: dest } : m))
   }
 
   function handleAutoMatch() {
-    setMappings(simulateAutoMap())
+    setMappings(simulateAutoMap(template.placeholders))
     setAutoMatched(true)
   }
 
-  function handleSave() {
+  async function handleGenerate() {
+    setGenerating(true)
     updateSession({ fieldMappings: mappings })
-    navigate('/cv/templates')
+
+    await new Promise((r) => setTimeout(r, 1500))
+
+    addToHistory({
+      id: `g-${Date.now()}`,
+      candidateName:  session.candidateName  || session.parsedData?.fullName  || 'Unknown',
+      candidateEmail: session.candidateEmail || session.parsedData?.email     || '',
+      sourceFiles: session.files.map((f) => f.name),
+      templateId:   template.id,
+      templateName: template.name,
+      outputFormat: session.outputFormat,
+      generatedBy: 'Y. Tanaka',
+      generatedAt: new Date().toISOString().slice(0, 10),
+      status: 'completed',
+    })
+
+    if (!session.candidateSaved && session.parsedData && session.jobId && session.recruiterId) {
+      const parsed = session.parsedData
+      const newCandidate: Candidate = {
+        id: `cand-new-${Date.now()}`,
+        jobId: session.jobId,
+        recruiterId: session.recruiterId,
+        name: parsed.fullName,
+        email: parsed.email,
+        location: parsed.currentLocation,
+        experienceYears: Number(parsed.totalExperienceYears) || 0,
+        skills: parsed.skills,
+        stage: 'sourced',
+        appliedDate: TODAY,
+        lastActivityDate: TODAY,
+        nextReminderDate: null,
+        reminderOverdue: false,
+        phone: parsed.phone,
+        address: parsed.address,
+        dateOfBirth: parsed.dateOfBirth,
+        currentJobTitle: parsed.currentJobTitle,
+        desiredRole: parsed.desiredRole,
+        availability: parsed.availability,
+        workExperience: parsed.workExperience,
+        education: parsed.education,
+        languages: parsed.languages,
+        certifications: parsed.certifications,
+        cvTemplateName: template.name,
+        cvOutputFormat: session.outputFormat,
+        cvGeneratedAt: new Date().toISOString().slice(0, 10),
+        cvStatus: 'completed',
+      }
+      addCandidate(newCandidate)
+      updateSession({ candidateSaved: true, candidateId: newCandidate.id })
+    }
+
+    setGenerating(false)
+    navigate('/cv/preview')
   }
 
   const filtered = mappings.filter((m) => {
@@ -60,7 +120,7 @@ export default function CVMappingPage() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <PageHeader
           title="Field Mapping"
-          subtitle="Step 3 of 5 — Map source fields to RecruitSync standard fields"
+          subtitle={`Step 4 of 5 — Map source fields to placeholders in "${template.name}"`}
           actions={
             <button
               onClick={handleAutoMatch}
@@ -72,6 +132,13 @@ export default function CVMappingPage() {
           }
         />
         <StepIndicator currentPath="/cv/mapping" />
+
+        <div className="mx-6 mt-4 flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-600">
+          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>description</span>
+          {template.templateFileName
+            ? <>Mapping into <strong>{template.templateFileName}</strong> ({template.placeholders.length} placeholders found)</>
+            : <>This template has no uploaded file yet — showing {template.placeholders.length} placeholders defined in <strong>{template.name}</strong></>}
+        </div>
 
         {autoMatched && (
           <div className="mx-6 mt-4 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 text-xs text-blue-700 font-medium">
@@ -100,7 +167,7 @@ export default function CVMappingPage() {
                 <tr className="bg-slate-50 border-b border-slate-100">
                   <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 w-48">Source Field</th>
                   <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3">Sample Value</th>
-                  <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 w-52">RecruitSync Field</th>
+                  <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 w-52">Template Placeholder</th>
                   <th className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider px-5 py-3 w-24">Confidence</th>
                   <th className="px-5 py-3 w-20" />
                 </tr>
@@ -116,10 +183,10 @@ export default function CVMappingPage() {
                       <select
                         value={m.destination}
                         onChange={(e) => updateDest(m.id, e.target.value)}
-                        className="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                        className="w-full text-xs font-mono border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
                       >
                         <option value="">— Ignore Field —</option>
-                        {DESTINATION_OPTIONS.slice(1).map((o) => <option key={o} value={o}>{o}</option>)}
+                        {template.placeholders.map((p) => <option key={p} value={p}>{p}</option>)}
                       </select>
                     </td>
                     <td className="px-5 py-3">
@@ -162,12 +229,25 @@ export default function CVMappingPage() {
 
           {/* Navigation */}
           <div className="flex items-center justify-between pb-6">
-            <button onClick={() => navigate('/cv/review')} className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
+            <button onClick={() => navigate('/cv/templates')} className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_back</span>Back
             </button>
-            <button onClick={handleSave} className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-primary-dark transition-colors">
-              Save Mapping & Continue
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
+            <button
+              onClick={handleGenerate}
+              disabled={generating}
+              className={`flex items-center gap-2 text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors ${!generating ? 'bg-primary text-white hover:bg-primary-dark' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+            >
+              {generating ? (
+                <>
+                  <span className="material-symbols-outlined animate-spin" style={{ fontSize: '16px' }}>autorenew</span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>auto_awesome</span>
+                  Generate CV
+                </>
+              )}
             </button>
           </div>
         </div>

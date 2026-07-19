@@ -36,7 +36,6 @@ export default function WorkspacePage({ entityType }: { entityType: EntityType }
     ? jobWsId(entityId)
     : candidateWsId(entityId)
 
-  // Resolve entity name
   const entity = useMemo(() => {
     if (entityType === 'client') {
       const c = clients.find((x) => x.id === entityId)

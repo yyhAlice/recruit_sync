@@ -30,7 +30,6 @@ const recentPlacements = candidates
 
 const maxStageCount = Math.max(...Object.values(candidatesByStage), 1)
 
-// Use real reminder data
 const openReminders  = initialReminders.filter((r) => r.status === 'open')
 const overdueCount   = openReminders.filter((r) => r.dueDate < TODAY).length
 const todayCount     = openReminders.filter((r) => r.dueDate === TODAY).length
@@ -82,15 +81,6 @@ export default function DashboardPage() {
         <PageHeader
           title="Dashboard"
           subtitle="Overview of your recruitment pipeline"
-          actions={
-            <button
-              onClick={() => navigate('/cv/upload')}
-              className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-1.5 rounded-lg hover:bg-primary-dark transition-colors"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>upload</span>
-              Upload CV
-            </button>
-          }
         />
 
         <main className="flex-1 overflow-y-auto p-6 space-y-5">

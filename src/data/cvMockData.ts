@@ -240,3 +240,18 @@ export const DESTINATION_OPTIONS = [
   'Certifications',
   'Notes',
 ]
+
+// Maps a mapping row's semantic category (defaultFieldMappings[].destination) to the
+// merge-field token a real template's placeholders array would contain for it.
+export const CATEGORY_TO_PLACEHOLDER: Record<string, string> = {
+  'Full Name':            '{{full_name}}',
+  'Email':                '{{email}}',
+  'Phone':                '{{phone}}',
+  'Address':               '{{address}}',
+  'Skills':                '{{skills}}',
+  'Work Experience':       '{{experience}}',
+  'Education':             '{{education}}',
+  'Certifications':        '{{certifications}}',
+  'Languages':             '{{languages}}',
+  'Professional Summary':  '{{summary}}',
+}

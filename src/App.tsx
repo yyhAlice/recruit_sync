@@ -13,13 +13,11 @@ import RemindersPage          from './pages/RemindersPage'
 import FileWorkspacePage      from './pages/FileWorkspacePage'
 import WorkspaceHomePage      from './pages/workspace/WorkspaceHomePage'
 import WorkspacePage          from './pages/workspace/WorkspacePage'
-import CVDashboardPage        from './pages/cv/CVDashboardPage'
 import CVUploadPage           from './pages/cv/CVUploadPage'
 import CVReviewPage           from './pages/cv/CVReviewPage'
 import CVMappingPage          from './pages/cv/CVMappingPage'
 import CVTemplatesPage        from './pages/cv/CVTemplatesPage'
 import CVPreviewPage          from './pages/cv/CVPreviewPage'
-import CVHistoryPage          from './pages/cv/CVHistoryPage'
 import CVTemplateManagePage   from './pages/cv/CVTemplateManagePage'
 
 export default function App() {
@@ -42,13 +40,11 @@ export default function App() {
       <Route path="/workspace/client/:clientId"     element={<WorkspacePage entityType="client" />} />
       <Route path="/workspace/job/:jobId"           element={<WorkspacePage entityType="job" />} />
       <Route path="/workspace/candidate/:candidateId" element={<WorkspacePage entityType="candidate" />} />
-      <Route path="/cv"                        element={<CVDashboardPage />} />
       <Route path="/cv/upload"                 element={<CVUploadPage />} />
       <Route path="/cv/review"                 element={<CVReviewPage />} />
       <Route path="/cv/mapping"                element={<CVMappingPage />} />
       <Route path="/cv/templates"              element={<CVTemplatesPage />} />
       <Route path="/cv/preview"               element={<CVPreviewPage />} />
-      <Route path="/cv/history"               element={<CVHistoryPage />} />
       <Route path="/cv/templates/manage"       element={<CVTemplateManagePage />} />
     </Routes>
   )

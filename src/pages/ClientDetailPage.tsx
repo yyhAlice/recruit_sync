@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import PageHeader from '../components/PageHeader'
 import StatusDot from '../components/StatusDot'
@@ -70,7 +70,6 @@ export default function ClientDetailPage() {
   const activityLogs = getActivityLogsByTargetId(client.id)
   const badgeClass = industryBadge[client.industry] ?? 'bg-slate-100 text-slate-600'
 
-  // Count candidates across all jobs
   const totalCandidates = jobs.reduce((sum, job) => sum + getCandidatesByJobId(job.id).length, 0)
   const ytdPlacements = jobs.reduce((sum, job) => sum + getCandidatesByJobId(job.id).filter(c => c.stage === 'placed').length, 0)
 

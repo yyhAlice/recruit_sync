@@ -88,7 +88,6 @@ export default function PipelineBoardPage() {
 
   const activeCandidate = activeId ? candidates.find((c) => c.id === activeId) ?? null : null
 
-  // Column counts from full filtered set
   const stageCounts = Object.fromEntries(
     PIPELINE_STAGES.map((s) => [s, filtered.filter((c) => c.stage === s).length])
   ) as Record<PipelineStage, number>

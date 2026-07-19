@@ -5,6 +5,7 @@ import PageHeader from '../../components/PageHeader'
 import StepIndicator from '../../components/cv/StepIndicator'
 import { useCVContext } from '../../context/CVContext'
 import { exampleParsedCandidate } from '../../data/cvMockData'
+import { jobs, clients, recruiters } from '../../data/mockData'
 import type { ParsedCandidate, WorkExperience, Education, CVLanguage, Certification } from '../../types/cv'
 
 const LANG_LEVELS = ['native', 'fluent', 'business', 'conversational', 'basic'] as const
@@ -41,6 +42,9 @@ export default function CVReviewPage() {
   const [data, setData] = useState<ParsedCandidate>(session.parsedData ?? exampleParsedCandidate)
   const [unsaved, setUnsaved] = useState(false)
   const [expandedExp, setExpandedExp] = useState<string | null>(null)
+  const [jobId, setJobId] = useState(session.jobId)
+  const [recruiterId, setRecruiterId] = useState(session.recruiterId)
+  const [formError, setFormError] = useState('')
 
   useEffect(() => { setUnsaved(true) }, [data])
 
@@ -60,7 +64,6 @@ export default function CVReviewPage() {
     }))
   }
 
-  // Skills
   const [newSkill, setNewSkill] = useState('')
   function addSkill() {
     if (!newSkill.trim()) return
@@ -69,7 +72,6 @@ export default function CVReviewPage() {
   }
   function removeSkill(s: string) { patch('skills', data.skills.filter((sk) => sk !== s)) }
 
-  // Work Experience
   function updateExp(id: string, field: keyof WorkExperience, val: string | boolean | string[]) {
     patch('workExperience', data.workExperience.map((e) => e.id === id ? { ...e, [field]: val } : e))
   }
@@ -80,7 +82,6 @@ export default function CVReviewPage() {
   }
   function removeExp(id: string) { patch('workExperience', data.workExperience.filter((e) => e.id !== id)) }
 
-  // Education
   function updateEdu(id: string, field: keyof Education, val: string) {
     patch('education', data.education.map((e) => e.id === id ? { ...e, [field]: val } : e))
   }
@@ -89,7 +90,6 @@ export default function CVReviewPage() {
   }
   function removeEdu(id: string) { patch('education', data.education.filter((e) => e.id !== id)) }
 
-  // Languages
   function updateLang(id: string, field: keyof CVLanguage, val: string) {
     patch('languages', data.languages.map((l) => l.id === id ? { ...l, [field]: val } : l))
   }
@@ -98,7 +98,6 @@ export default function CVReviewPage() {
   }
   function removeLang(id: string) { patch('languages', data.languages.filter((l) => l.id !== id)) }
 
-  // Certifications
   function updateCert(id: string, field: keyof Certification, val: string) {
     patch('certifications', data.certifications.map((c) => c.id === id ? { ...c, [field]: val } : c))
   }
@@ -113,8 +112,12 @@ export default function CVReviewPage() {
   }
 
   function handleContinue() {
-    updateSession({ parsedData: data })
-    navigate('/cv/mapping')
+    if (!data.fullName.trim()) { setFormError('Name is required'); return }
+    if (!jobId) { setFormError('Please select a job'); return }
+    if (!recruiterId) { setFormError('Please select a recruiter'); return }
+    setFormError('')
+    updateSession({ parsedData: data, jobId, recruiterId })
+    navigate('/cv/templates')
   }
 
   const unresolvedConflicts = data.conflicts.filter((c) => c.selected === null)
@@ -155,6 +158,36 @@ export default function CVReviewPage() {
         )}
 
         <div className="flex-1 overflow-y-auto p-6 space-y-5">
+          {formError && (
+            <p className="text-xs text-red-500 font-medium bg-red-50 px-3 py-2 rounded-lg">{formError}</p>
+          )}
+
+          {/* Assignment */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+            <SectionHeader icon="assignment_ind" title="Assignment" />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-500 mb-1 block">Applying For *</label>
+                <select value={jobId} onChange={(e) => setJobId(e.target.value)}
+                  className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  <option value="">Select job…</option>
+                  {jobs.filter((j) => j.status === 'active').map((j) => {
+                    const c = clients.find((cl) => cl.id === j.clientId)
+                    return <option key={j.id} value={j.id}>{j.title} — {c?.companyName}</option>
+                  })}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-500 mb-1 block">Recruiter *</label>
+                <select value={recruiterId} onChange={(e) => setRecruiterId(e.target.value)}
+                  className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+                  <option value="">Select recruiter…</option>
+                  {recruiters.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </div>
+            </div>
+          </div>
+
           {/* Personal Info */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <SectionHeader icon="person" title="Personal Information" />
@@ -211,7 +244,7 @@ export default function CVReviewPage() {
               </button>
             </div>
             <div className="space-y-3">
-              {data.workExperience.map((exp, idx) => (
+              {data.workExperience.map((exp) => (
                 <div key={exp.id} className="border border-slate-200 rounded-xl overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 bg-slate-50 cursor-pointer" onClick={() => setExpandedExp(expandedExp === exp.id ? null : exp.id)}>
                     <div>
@@ -340,7 +373,7 @@ export default function CVReviewPage() {
             <div className="flex gap-3">
               <button onClick={handleSaveDraft} className="text-sm font-medium text-slate-700 bg-white border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">Save Draft</button>
               <button onClick={handleContinue} className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-primary-dark transition-colors">
-                Continue to Field Mapping
+                Continue to Template Selection
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
               </button>
             </div>

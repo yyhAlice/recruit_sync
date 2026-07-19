@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Zap } from 'lucide-react'
 import { navSections, type NavItem } from '../config/navConfig'
@@ -15,9 +15,6 @@ function isItemActive(to: string, pathname: string): boolean {
   if (to === '/clients')   return pathname === '/clients'   || pathname.startsWith('/clients/')
   if (to === '/jobs')      return pathname === '/jobs'      || (pathname.startsWith('/jobs/') && !pathname.includes('/pipeline'))
   if (to === '/pipeline')  return pathname === '/pipeline'
-  if (to === '/cv')        return pathname === '/cv'
-  if (to === '/cv/upload') return pathname === '/cv/upload'
-  if (to === '/cv/history')         return pathname === '/cv/history'
   if (to === '/cv/templates/manage') return pathname === '/cv/templates/manage' || pathname === '/cv/templates'
   if (to === '/workspace') return pathname === '/workspace' || pathname.startsWith('/workspace/')
   if (to === '/activity')  return pathname === '/activity'
@@ -101,7 +98,6 @@ function NavItemEl({ item, active, collapsed }: { item: NavItem; active: boolean
 
 // ── Section ────────────────────────────────────────────────────────────────────
 function SectionEl({
-  sectionId,
   title,
   items,
   collapsed,
@@ -109,7 +105,6 @@ function SectionEl({
   onToggle,
   pathname,
 }: {
-  sectionId: string
   title: string
   items: NavItem[]
   collapsed: boolean
@@ -139,11 +134,9 @@ function SectionEl({
           }
         </button>
       ) : (
-        /* Divider in collapsed mode */
         <div className="h-px bg-slate-100 mx-2 my-2" />
       )}
 
-      {/* Items */}
       {(sectionOpen || collapsed) && (
         <div className={collapsed ? 'flex flex-col items-center gap-0.5 py-0.5' : 'space-y-0.5'}>
           {items.map((item) => (
@@ -194,7 +187,7 @@ export default function Sidebar() {
         {!collapsed && (
           <div className="min-w-0">
             <div className="font-bold text-slate-900 text-sm leading-tight tracking-tight">RecruitSync</div>
-            <div className="text-[10px] text-slate-400 leading-tight">International CRM</div>
+            <div className="text-[10px] text-slate-400 leading-tight">Recruitment CRM</div>
           </div>
         )}
         {/* Collapse toggle */}
@@ -229,7 +222,6 @@ export default function Sidebar() {
         {navSections.map((section) => (
           <SectionEl
             key={section.id}
-            sectionId={section.id}
             title={section.title}
             items={section.items}
             collapsed={collapsed}

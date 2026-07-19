@@ -14,6 +14,7 @@ import FolderDialog from '../../components/workspace/FolderDialog'
 import MoveDialog from '../../components/workspace/MoveDialog'
 import ConfirmDialog from '../../components/workspace/ConfirmDialog'
 import EmptyState from '../../components/workspace/EmptyState'
+import EntityPickerDialog from '../../components/workspace/EntityPickerDialog'
 import { useWorkspace } from '../../context/WorkspaceContext'
 import { clients, jobs, candidates } from '../../data/mockData'
 import { clientWsId, jobWsId, candidateWsId } from '../../data/workspaceMockData'
@@ -105,7 +106,7 @@ function WsLeftNav({
 interface EntityRow { id: string; name: string; subtitle: string; lastUpdated: string; icon: LucideIcon }
 
 function CenterPanel({
-  category, rows, selectedId, onSelect, search, onSearch, sortBy, onSort,
+  category, rows, selectedId, onSelect, search, onSearch, sortBy, onSort, onNew,
 }: {
   category: Category
   rows: EntityRow[]
@@ -115,16 +116,25 @@ function CenterPanel({
   onSearch: (q: string) => void
   sortBy: SortBy
   onSort: (s: SortBy) => void
+  onNew: () => void
 }) {
   const title = category === 'clients' ? 'Clients' : category === 'jobs' ? 'Jobs' : category === 'candidates' ? 'Candidates' : 'Recent Files'
+  const singular = category === 'clients' ? 'client' : category === 'jobs' ? 'job' : 'candidate'
 
   return (
     <div className="w-64 flex-shrink-0 flex flex-col border-r border-slate-100 bg-white overflow-hidden">
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-slate-50">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-bold text-slate-800">{title}</h2>
-          <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full font-medium">{rows.length}</span>
+          <div className="flex items-center gap-1.5">
+            <h2 className="text-sm font-bold text-slate-800">{title}</h2>
+            <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full font-medium">{rows.length}</span>
+          </div>
+          <button onClick={onNew} title={`New ${singular} workspace`}
+            className="flex items-center gap-1 text-xs font-semibold text-primary bg-primary/8 hover:bg-primary/15 px-2 py-1 rounded-lg transition-colors">
+            <FolderPlus size={12} />
+            New
+          </button>
         </div>
         {/* Search */}
         <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 mb-2">
@@ -155,7 +165,15 @@ function CenterPanel({
         {rows.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center px-4">
             <FolderOpen size={28} className="text-slate-200 mb-2" />
-            <p className="text-xs text-slate-400">No results found</p>
+            <p className="text-xs text-slate-400">
+              {search ? 'No results found' : `No ${title.toLowerCase()} workspaces yet`}
+            </p>
+            {!search && (
+              <button onClick={onNew} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-white bg-primary px-3 py-1.5 rounded-lg hover:bg-primary-dark transition-colors">
+                <FolderPlus size={12} />
+                Create one
+              </button>
+            )}
           </div>
         ) : (
           rows.map((row) => (
@@ -178,7 +196,7 @@ function CenterPanel({
 }
 
 // ─── Recent Files Widget ─────────────────────────────────────────────────────────
-function RecentFilesWidget({ files, allFolders }: { files: { file: WsFile; entityName: string }[]; allFolders: WsFolder[] }) {
+function RecentFilesWidget({ files }: { files: { file: WsFile; entityName: string }[] }) {
   if (files.length === 0) return (
     <div className="flex flex-col items-center justify-center h-full text-center">
       <Clock size={40} className="text-slate-200 mb-3" />
@@ -270,14 +288,12 @@ function RightPanel({
   const currentFolder = allFolders.find((f) => f.id === currentFolderId) ?? null
   const currentFiles  = currentFolderId ? getFilesByFolder(currentFolderId) : []
 
-  // Content search
   const { search } = useWorkspace()
   const searchResults = useMemo(() => {
     if (!contentSearch.trim()) return null
     return search(workspaceId, contentSearch)
   }, [contentSearch, workspaceId, search])
 
-  // Last updated
   const lastUpdatedStr = useMemo(() => {
     const ws_folders = allFolders.filter((f) => f.workspaceId === workspaceId)
     const dates = ws_folders.map((f) => new Date(f.updatedAt).getTime())
@@ -442,7 +458,8 @@ export default function WorkspaceHomePage() {
   const [sortBy,           setSortBy]           = useState<SortBy>('name')
 
   // Dialogs
-  const [showUpload,   setShowUpload]   = useState(false)
+  const [showUpload,      setShowUpload]      = useState(false)
+  const [showEntityPicker, setShowEntityPicker] = useState(false)
   const [folderDlg,    setFolderDlg]   = useState<{ mode: 'create' | 'rename'; folder?: WsFolder } | null>(null)
   const [moveTarget,   setMoveTarget]  = useState<MoveTarget | null>(null)
   const [deleteTarget, setDeleteTarget]= useState<DeleteTarget | null>(null)
@@ -484,31 +501,29 @@ export default function WorkspaceHomePage() {
     return new Date(max).toISOString()
   }
 
+  // All entities per category, unfiltered — backs both the "new workspace" picker
+  // and (after filtering to hasWorkspace) the center panel list.
+  const allRowsByCategory = useMemo(() => {
+    const clientRows: EntityRow[] = clients.map((c) => ({ id: c.id, name: c.companyName, subtitle: c.industry, lastUpdated: wsLastUpdated(clientWsId(c.id)), icon: Building2 }))
+    const jobRows: EntityRow[] = jobs.map((j) => {
+      const cl = clients.find((c) => c.id === j.clientId)
+      return { id: j.id, name: j.title, subtitle: cl?.companyName ?? '', lastUpdated: wsLastUpdated(jobWsId(j.id)), icon: Briefcase }
+    })
+    const candidateRows: EntityRow[] = candidates.map((c) => ({ id: c.id, name: c.name, subtitle: c.location, lastUpdated: wsLastUpdated(candidateWsId(c.id)), icon: User }))
+    return { clients: clientRows, jobs: jobRows, candidates: candidateRows }
+  }, [allFolders])
+
   const entityRows: EntityRow[] = useMemo(() => {
+    if (category === 'recent') return []
+    const cat = category as 'clients' | 'jobs' | 'candidates'
     const q = listSearch.toLowerCase()
-    let rows: EntityRow[] = []
-
-    if (category === 'clients') {
-      rows = clients
-        .filter((c) => c.companyName.toLowerCase().includes(q))
-        .map((c) => ({ id: c.id, name: c.companyName, subtitle: c.industry, lastUpdated: wsLastUpdated(clientWsId(c.id)), icon: Building2 }))
-    } else if (category === 'jobs') {
-      rows = jobs
-        .filter((j) => j.title.toLowerCase().includes(q) || clients.find((c) => c.id === j.clientId)?.companyName.toLowerCase().includes(q))
-        .map((j) => {
-          const cl = clients.find((c) => c.id === j.clientId)
-          return { id: j.id, name: j.title, subtitle: cl?.companyName ?? '', lastUpdated: wsLastUpdated(jobWsId(j.id)), icon: Briefcase }
-        })
-    } else if (category === 'candidates') {
-      rows = candidates
-        .filter((c) => c.name.toLowerCase().includes(q))
-        .map((c) => ({ id: c.id, name: c.name, subtitle: c.location, lastUpdated: wsLastUpdated(candidateWsId(c.id)), icon: User }))
-    }
-
+    let rows = allRowsByCategory[cat].filter((r) =>
+      r.lastUpdated !== '' && (r.name.toLowerCase().includes(q) || r.subtitle.toLowerCase().includes(q))
+    )
     if (sortBy === 'name')    rows = [...rows].sort((a, b) => a.name.localeCompare(b.name))
     if (sortBy === 'updated') rows = [...rows].sort((a, b) => (b.lastUpdated || '').localeCompare(a.lastUpdated || ''))
     return rows
-  }, [category, listSearch, sortBy, allFolders])
+  }, [category, listSearch, sortBy, allRowsByCategory])
 
   // ── Recent files ─────────────────────────────────────────────────────────────
   const recentFiles = useMemo(() => {
@@ -539,6 +554,14 @@ export default function WorkspaceHomePage() {
     setSelectedEntityId(id)
     setCurrentFolderId(null)
     setContentSearch('')
+  }
+
+  function handlePickEntity(id: string, hasWs: boolean) {
+    setSelectedEntityId(id)
+    setCurrentFolderId(null)
+    setContentSearch('')
+    setShowEntityPicker(false)
+    if (!hasWs) setFolderDlg({ mode: 'create' })
   }
 
   function handleFolderCreate(name: string, parentId: string | null) {
@@ -610,6 +633,7 @@ export default function WorkspaceHomePage() {
             onSearch={setListSearch}
             sortBy={sortBy}
             onSort={setSortBy}
+            onNew={() => setShowEntityPicker(true)}
           />
         )}
 
@@ -617,7 +641,7 @@ export default function WorkspaceHomePage() {
         <div className="flex flex-1 overflow-hidden">
           {category === 'recent' ? (
             <div className="flex-1 overflow-y-auto bg-surface">
-              <RecentFilesWidget files={recentFiles} allFolders={allFolders} />
+              <RecentFilesWidget files={recentFiles} />
             </div>
           ) : !selectedEntityId || !workspaceId || !entityInfo ? (
             <div className="flex-1 bg-surface">
@@ -647,6 +671,15 @@ export default function WorkspaceHomePage() {
       </div>
 
       {/* Dialogs */}
+      {showEntityPicker && category !== 'recent' && (
+        <EntityPickerDialog
+          category={category}
+          rows={allRowsByCategory[category as 'clients' | 'jobs' | 'candidates']}
+          onPick={handlePickEntity}
+          onClose={() => setShowEntityPicker(false)}
+        />
+      )}
+
       {showUpload && workspaceId && (
         <UploadDialog
           workspaceId={workspaceId}

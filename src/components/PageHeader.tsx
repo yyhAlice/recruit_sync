@@ -17,12 +17,13 @@ export default function PageHeader({ title, subtitle, breadcrumbs, actions }: Pa
     <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200 bg-white">
       <div>
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <div className="flex items-center gap-1 mb-1">
+          <div className="flex items-center gap-1 mb-1.5">
             {breadcrumbs.map((crumb, i) => (
               <span key={i} className="flex items-center gap-1">
                 {i > 0 && <span className="text-slate-300 text-xs">›</span>}
                 {crumb.to ? (
-                  <Link to={crumb.to} className="text-xs text-slate-500 hover:text-primary transition-colors">
+                  <Link to={crumb.to} className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-primary transition-colors">
+                    {i === 0 && <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_back</span>}
                     {crumb.label}
                   </Link>
                 ) : (

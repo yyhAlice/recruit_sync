@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
 import type { UploadSession, GeneratedCV, ParsedCandidate, FieldMapping } from '../types/cv'
-import { generatedCVHistory, exampleParsedCandidate, defaultFieldMappings } from '../data/cvMockData'
+import { generatedCVHistory, exampleParsedCandidate, defaultFieldMappings, CATEGORY_TO_PLACEHOLDER } from '../data/cvMockData'
 
 const STORAGE_KEY = 'recruitsync_cv_session'
 const HISTORY_KEY = 'recruitsync_cv_history'
@@ -14,6 +14,10 @@ const EMPTY_SESSION: UploadSession = {
   fieldMappings: [],
   selectedTemplateId: '',
   outputFormat: 'pdf',
+  jobId: '',
+  recruiterId: '',
+  candidateSaved: false,
+  candidateId: '',
 }
 
 interface CVContextValue {
@@ -24,12 +28,9 @@ interface CVContextValue {
 
   history: GeneratedCV[]
   addToHistory: (cv: GeneratedCV) => void
-  deleteFromHistory: (id: string) => void
 
-  // Simulate parsing — populates session.parsedData from the example candidate
   simulateParse: (candidateName?: string, candidateEmail?: string) => Promise<ParsedCandidate>
-  // Simulate auto-mapping
-  simulateAutoMap: () => FieldMapping[]
+  simulateAutoMap: (placeholders: string[]) => FieldMapping[]
 }
 
 const CVContext = createContext<CVContextValue | null>(null)
@@ -53,7 +54,6 @@ export function CVProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  // Persist session to localStorage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
   }, [session])
@@ -78,11 +78,6 @@ export function CVProvider({ children }: { children: ReactNode }) {
     setHistory((prev) => [cv, ...prev])
   }
 
-  function deleteFromHistory(id: string) {
-    setHistory((prev) => prev.filter((cv) => cv.id !== id))
-  }
-
-  // Simulate async parsing (2 second delay) — returns a copy of the example with the given name/email
   async function simulateParse(candidateName?: string, candidateEmail?: string): Promise<ParsedCandidate> {
     await new Promise((res) => setTimeout(res, 2000))
     const parsed: ParsedCandidate = {
@@ -94,13 +89,15 @@ export function CVProvider({ children }: { children: ReactNode }) {
     return parsed
   }
 
-  // Simulate auto field mapping
-  function simulateAutoMap(): FieldMapping[] {
-    return defaultFieldMappings
+  function simulateAutoMap(placeholders: string[]): FieldMapping[] {
+    return defaultFieldMappings.map((m) => {
+      const token = CATEGORY_TO_PLACEHOLDER[m.destination]
+      return { ...m, destination: token && placeholders.includes(token) ? token : '' }
+    })
   }
 
   return (
-    <CVContext.Provider value={{ session, setSession, updateSession, resetSession, history, addToHistory, deleteFromHistory, simulateParse, simulateAutoMap }}>
+    <CVContext.Provider value={{ session, setSession, updateSession, resetSession, history, addToHistory, simulateParse, simulateAutoMap }}>
       {children}
     </CVContext.Provider>
   )

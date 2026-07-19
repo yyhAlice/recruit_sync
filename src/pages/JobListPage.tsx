@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Sidebar from '../components/Sidebar'
 import PageHeader from '../components/PageHeader'
+import Pagination from '../components/Pagination'
 import { jobs as baseJobs, clients, candidates } from '../data/mockData'
 import type { Job, EmploymentType } from '../types'
 import { TODAY as TODAY_STR } from '../utils/format'
@@ -41,6 +42,8 @@ function daysUntilColor(dateStr: string, status: string): string {
   if (diff <= 7) return 'text-warning font-semibold'
   return 'text-slate-500'
 }
+
+const PAGE_SIZE = 5
 
 const allClients = ['All Clients', ...clients.map((c) => c.companyName)]
 const allLocations = ['All Locations', ...Array.from(new Set<string>(baseJobs.map((j) => j.location)))]
@@ -175,7 +178,6 @@ function AddJobModal({ onClose, onAdd }: { onClose: () => void; onAdd: (j: Job) 
   )
 }
 
-// Pre-compute candidate counts per job
 const candidateCountByJob = Object.fromEntries(
   baseJobs.map((j) => {
     const all = candidates.filter((c) => c.jobId === j.id)
@@ -192,6 +194,7 @@ export default function JobListPage() {
   const [locationFilter, setLocationFilter] = useState('All Locations')
   const [showModal, setShowModal] = useState(false)
   const [localJobs, setLocalJobs] = useState<Job[]>([])
+  const [page, setPage] = useState(1)
 
   const jobs = useMemo(() => [...baseJobs, ...localJobs], [localJobs])
 
@@ -208,6 +211,15 @@ export default function JobListPage() {
       return matchSearch && matchStatus && matchClient && matchLocation
     })
   }, [search, statusFilter, clientFilter, locationFilter])
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paged = useMemo(() => filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE), [filtered, currentPage])
+
+  function handleSearchChange(v: string) { setSearch(v); setPage(1) }
+  function handleStatusChange(v: string) { setStatusFilter(v); setPage(1) }
+  function handleClientChange(v: string) { setClientFilter(v); setPage(1) }
+  function handleLocationChange(v: string) { setLocationFilter(v); setPage(1) }
 
   const totalActive = jobs.filter((j) => j.status === 'active').length
   const totalOnHold = jobs.filter((j) => j.status === 'on-hold').length
@@ -252,34 +264,34 @@ export default function JobListPage() {
               type="text"
               placeholder="Search title, client, skills..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
           </div>
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => handleStatusChange(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             {allStatuses.map((s) => <option key={s}>{s}</option>)}
           </select>
           <select
             value={clientFilter}
-            onChange={(e) => setClientFilter(e.target.value)}
+            onChange={(e) => handleClientChange(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             {allClients.map((c) => <option key={c}>{c}</option>)}
           </select>
           <select
             value={locationFilter}
-            onChange={(e) => setLocationFilter(e.target.value)}
+            onChange={(e) => handleLocationChange(e.target.value)}
             className="text-sm border border-slate-200 rounded-lg px-3 py-1.5 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             {allLocations.map((l) => <option key={l}>{l}</option>)}
           </select>
           {(search || statusFilter !== 'All Status' || clientFilter !== 'All Clients' || locationFilter !== 'All Locations') && (
             <button
-              onClick={() => { setSearch(''); setStatusFilter('All Status'); setClientFilter('All Clients'); setLocationFilter('All Locations') }}
+              onClick={() => { setSearch(''); setStatusFilter('All Status'); setClientFilter('All Clients'); setLocationFilter('All Locations'); setPage(1) }}
               className="text-xs text-slate-400 hover:text-danger flex items-center gap-1 transition-colors"
             >
               <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>close</span>
@@ -306,7 +318,7 @@ export default function JobListPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((job) => {
+                {paged.map((job) => {
                   const client = clients.find((c) => c.id === job.clientId)
                   const counts = candidateCountByJob[job.id]
                   const closingLabel = daysUntilClose(job.closingDate)
@@ -367,13 +379,13 @@ export default function JobListPage() {
 
                       {/* Candidate count */}
                       <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-sm font-bold text-slate-700">{counts.total}</span>
-                          {counts.active > 0 && (
-                            <span className="text-xs bg-blue-50 text-primary px-1.5 py-0.5 rounded font-medium">
-                              {counts.active} active
-                            </span>
-                          )}
+                        <div>
+                          <div className="text-sm font-semibold text-slate-700">
+                            {counts.total} {counts.total === 1 ? 'candidate' : 'candidates'}
+                          </div>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {counts.active > 0 ? `${counts.active} active in pipeline` : 'None active'}
+                          </div>
                         </div>
                       </td>
 
@@ -418,7 +430,7 @@ export default function JobListPage() {
                       <span className="material-symbols-outlined block text-5xl text-slate-200 mb-2">work_off</span>
                       <p className="text-sm text-slate-400">No jobs match your filters</p>
                       <button
-                        onClick={() => { setSearch(''); setStatusFilter('All Status'); setClientFilter('All Clients'); setLocationFilter('All Locations') }}
+                        onClick={() => { setSearch(''); setStatusFilter('All Status'); setClientFilter('All Clients'); setLocationFilter('All Locations'); setPage(1) }}
                         className="mt-3 text-xs text-primary hover:underline"
                       >
                         Clear filters
@@ -430,9 +442,7 @@ export default function JobListPage() {
             </table>
           </div>
 
-          <div className="mt-4 text-xs text-slate-400 text-right">
-            Showing {filtered.length} of {jobs.length} jobs
-          </div>
+          <Pagination page={currentPage} pageSize={PAGE_SIZE} totalItems={filtered.length} onChange={setPage} />
         </div>
       </div>
     </div>

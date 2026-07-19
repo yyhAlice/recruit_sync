@@ -34,39 +34,19 @@ function langLabel(lang: TemplateLanguage) {
 
 export default function CVTemplatesPage() {
   const navigate = useNavigate()
-  const { session, updateSession, addToHistory } = useCVContext()
+  const { session, updateSession } = useCVContext()
 
   const [selectedId, setSelectedId]     = useState<string>(session.selectedTemplateId ?? '')
   const [outputFormat, setOutputFormat] = useState<OutputFormat>(session.outputFormat ?? 'pdf')
   const [langFilter, setLangFilter]     = useState<TemplateLanguage | 'all'>('all')
-  const [generating, setGenerating]     = useState(false)
 
   const filtered = cvTemplates.filter((t) => langFilter === 'all' || t.language === langFilter)
   const selected = cvTemplates.find((t) => t.id === selectedId)
 
-  async function handleGenerate() {
+  function handleContinue() {
     if (!selectedId) return
-    setGenerating(true)
     updateSession({ selectedTemplateId: selectedId, outputFormat })
-
-    await new Promise((r) => setTimeout(r, 1500))
-
-    const tpl = cvTemplates.find((t) => t.id === selectedId)!
-    addToHistory({
-      id: `g-${Date.now()}`,
-      candidateName:  session.candidateName  || session.parsedData?.fullName  || 'Unknown',
-      candidateEmail: session.candidateEmail || session.parsedData?.email     || '',
-      sourceFiles: session.files.map((f) => f.name),
-      templateId:   tpl.id,
-      templateName: tpl.name,
-      outputFormat,
-      generatedBy: 'Y. Tanaka',
-      generatedAt: new Date().toISOString().slice(0, 10),
-      status: 'completed',
-    })
-
-    setGenerating(false)
-    navigate('/cv/preview')
+    navigate('/cv/mapping')
   }
 
   return (
@@ -75,7 +55,7 @@ export default function CVTemplatesPage() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <PageHeader
           title="Select Template"
-          subtitle="Step 4 of 5 — Choose an output template for the generated CV"
+          subtitle="Step 3 of 5 — Choose an output template for the generated CV"
           actions={
             <button onClick={() => navigate('/cv/templates/manage')} className="text-sm font-medium text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-lg hover:bg-slate-50 transition-colors">
               Manage Templates
@@ -168,25 +148,16 @@ export default function CVTemplatesPage() {
 
           {/* Navigation */}
           <div className="flex items-center justify-between pb-6">
-            <button onClick={() => navigate('/cv/mapping')} className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
+            <button onClick={() => navigate('/cv/review')} className="text-sm font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_back</span>Back
             </button>
             <button
-              onClick={handleGenerate}
-              disabled={!selectedId || generating}
-              className={`flex items-center gap-2 text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors ${selectedId && !generating ? 'bg-primary text-white hover:bg-primary-dark' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
+              onClick={handleContinue}
+              disabled={!selectedId}
+              className={`flex items-center gap-2 text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors ${selectedId ? 'bg-primary text-white hover:bg-primary-dark' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`}
             >
-              {generating ? (
-                <>
-                  <span className="material-symbols-outlined animate-spin" style={{ fontSize: '16px' }}>autorenew</span>
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>auto_awesome</span>
-                  Generate CV
-                </>
-              )}
+              Continue to Field Mapping
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
             </button>
           </div>
         </div>

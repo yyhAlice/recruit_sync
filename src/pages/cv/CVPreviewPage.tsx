@@ -94,6 +94,13 @@ export default function CVPreviewPage() {
           subtitle="Step 5 of 5 — Review the generated CV before download"
           actions={
             <div className="flex items-center gap-2">
+              {session.candidateSaved && (
+                <button onClick={() => navigate(session.candidateId ? `/candidates/${session.candidateId}` : '/candidates')}
+                  className="flex items-center gap-1.5 bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors">
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check_circle</span>
+                  View Candidate Profile
+                </button>
+              )}
               <button onClick={handleDownload}
                 className="flex items-center gap-1.5 bg-success text-white text-sm font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-opacity">
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
@@ -107,6 +114,13 @@ export default function CVPreviewPage() {
           }
         />
         <StepIndicator currentPath="/cv/preview" />
+
+        {session.candidateSaved && (
+          <div className="mx-6 mt-4 flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2.5 text-xs text-success font-semibold">
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check_circle</span>
+            {name} was saved as a candidate — click "View Candidate Profile" above to confirm.
+          </div>
+        )}
 
         <div className="flex-1 flex overflow-hidden">
           {/* Left panel — metadata */}
@@ -165,8 +179,8 @@ export default function CVPreviewPage() {
               <button onClick={() => navigate('/cv/templates')} className="w-full text-xs font-medium text-slate-500 hover:text-slate-700 flex items-center gap-1">
                 <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>arrow_back</span>Change Template
               </button>
-              <button onClick={() => navigate('/cv')} className="w-full text-xs font-medium text-primary hover:underline flex items-center gap-1">
-                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>home</span>Back to Dashboard
+              <button onClick={() => navigate('/candidates')} className="w-full text-xs font-medium text-primary hover:underline flex items-center gap-1">
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>home</span>Back to Candidates
               </button>
             </div>
           </div>

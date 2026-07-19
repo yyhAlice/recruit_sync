@@ -4,15 +4,10 @@ import {
   Briefcase,
   Users,
   Kanban,
-  Sparkles,
-  Upload,
-  FileOutput,
   LayoutTemplate,
   FolderOpen,
   History,
   Bell,
-  UserCog,
-  Settings,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -46,15 +41,6 @@ export const navSections: NavSection[] = [
       { label: 'Jobs',       icon: Briefcase, to: '/jobs' },
       { label: 'Candidates', icon: Users,     to: '/candidates' },
       { label: 'Pipeline',   icon: Kanban,    to: '/pipeline' },
-    ],
-  },
-  {
-    id: 'cv',
-    title: 'CV Management',
-    items: [
-      { label: 'CV Dashboard',  icon: Sparkles,       to: '/cv' },
-      { label: 'Upload & Parse', icon: Upload,         to: '/cv/upload' },
-      { label: 'Generated CVs', icon: FileOutput,      to: '/cv/history' },
       { label: 'Templates',     icon: LayoutTemplate,  to: '/cv/templates/manage' },
     ],
   },
@@ -71,14 +57,6 @@ export const navSections: NavSection[] = [
     items: [
       { label: 'Activity Logs', icon: History, to: '/activity' },
       { label: 'Reminders',     icon: Bell,    to: '/reminders', badge: 3 },
-    ],
-  },
-  {
-    id: 'admin',
-    title: 'Administration',
-    items: [
-      { label: 'Users',    icon: UserCog, disabled: true },
-      { label: 'Settings', icon: Settings, disabled: true },
     ],
   },
 ]

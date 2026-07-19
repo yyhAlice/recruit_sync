@@ -102,6 +102,7 @@ export interface CVTemplate {
   isActive: boolean
   fileType: 'docx' | 'pdf'
   placeholders: string[]
+  templateFileName?: string
 }
 
 export interface GeneratedCV {
@@ -126,4 +127,8 @@ export interface UploadSession {
   fieldMappings: FieldMapping[]
   selectedTemplateId: string
   outputFormat: OutputFormat
+  jobId: string
+  recruiterId: string
+  candidateSaved: boolean
+  candidateId: string
 }
